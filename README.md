@@ -10,13 +10,14 @@ This repository is only a POC (proof of concept) and will serve as a base to pro
 - [x] Discord interface
 - [x] Docker integration
 - [ ] Migration to docker-compose / docker through gradle ?
-- [ ] Database setup
-- [ ] Http request for API usage
+- [x] Database setup
+    - [ ] Schema automatic setup
+- [x] Http request for API usage
     - [ ] Mod API poc
-    - [ ] Game client DL poc
+    - [x] Game client DL poc
 - [ ] HTML page service
-- [ ] JSON Parsing and serializing
+- [x] JSON Parsing and serializing
     - [ ] JSON Versionning
-- [ ] Service handling
+- [x] Service handling
     - [ ] Parallel execution of multiple shards
 - [ ] Configuration example file
