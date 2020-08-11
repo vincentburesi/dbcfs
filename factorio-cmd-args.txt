@@ -1,0 +1,115 @@
+Usage:
+  factorio [OPTION...]
+
+ General options:
+  -h, --help                    display help
+      --version                 show version information
+  -v, --verbose                 enable verbose logging
+  -c, --config PATH             config file to use
+      --no-log-rotation         don't rotate log file
+      --mod-directory PATH      Mod directory to use
+      --check-unused-prototype-data
+                                Print a warning for all prototype values that
+                                were not accessed.
+      --executable-path PATH    Override autodetected __PATH__executable.
+                                Usually not needed except on very weird systems.
+
+ Running options:
+  -s, --map2scenario arg        map to scenario conversion
+  -m, --scenario2map arg        scenario to map conversion
+      --apply-update arg        immediately apply update package
+      --create FILE             create a new map
+      --map-gen-settings FILE   Map generation settings for use with
+                                --create, --start-server-load-scenario or
+                                --generate-map-preview. See
+                                data/map-gen-settings.example.json
+      --map-gen-seed SEED       Map generation seed for use with --create,
+                                --start-server-load-scenario or
+                                --generate-map-preview. Will override seed specified in map
+                                gen settings
+      --map-gen-seed-max SEED   Map generation seed for use with
+                                --generate-map-preview to generate multiple previews using
+                                every second seed in the interval from
+                                map-gen-seed to map-gen-seed-max.
+      --map-settings FILE       Map settings for use with --create or
+                                --start-server-load-scenario. See
+                                data/base/prototypes/map-settings.lua
+      --preset arg              Name of the map generation preset to be used.
+      --generate-map-preview PATH
+                                Generate preview images of the map; PATH
+                                should name a PNG file or end with a '/' or '\' to
+                                indicate a directory.
+      --generate-map-preview-random COUNT
+                                Number of maps to generate with a random seed
+                                using --generate-map-preview.
+      --map-preview-size SCALE  Size (in pixels) of map preview (default:
+                                1024)
+      --map-preview-scale SCALE
+                                Scale (meters per pixel) of map preview
+                                (default: 1)
+      --map-preview-offset X,Y  Offset of the center of the map, in meters
+                                (default: 0,0)
+      --noise-outputs TAG,TAG...
+                                Indicate which variables of noise program to
+                                output
+      --slope-shading SHADEAMOUNT
+                                Apply elevation shading to map preview
+      --slope-shade-property SHADEPROP
+                                Property to apply slope shading to (default:
+                                elevation)
+      --report-quantities PROTOTYPE,...
+                                When generating map preview, report
+                                approximate quantities of the named entity prototypes
+      --threads THREADCOUNT     Number of threads to use when generating map
+                                previews
+      --disable-migration-window
+                                Disables the gui that is shown when opening a
+                                save with migrated content
+      --start-server FILE       start a multiplayer server
+      --start-server-load-scenario [MOD/]NAME
+                                start a multiplayer server and load the
+                                specified scenario. The scenario is looked for
+                                inside the given mod. If no mod is given, it is
+                                looked for in the top-level scenarios directory.
+      --start-server-load-latest
+                                start a multiplayer server and load the
+                                latest available save
+      --until-tick TICK         run a save until given map tick
+      --benchmark FILE          load save and run benchmark
+      --benchmark-ticks N       number of ticks for benchmarking. Default is
+                                1000 (default: 1000)
+      --benchmark-runs N        how often the number of ticks will be run,
+                                map will reload after each run. Default is 1
+                                (default: 1)
+      --benchmark-verbose timings
+                                comma separated list of timings to output
+                                each tick. "all", "timestamp" as well as all
+                                other values seen in the debug view are allowed
+                                here. An empty string disabled verbose
+                                benchmarking. (default: )
+      --benchmark-sanitize      only output the final benchmark results
+      --benchmark-ignore-paused
+                                leaves the game paused if it was paused when
+                                saved. By default the game is unpaused when a
+                                benchmark starts.
+      --output-perf-stats FILE  path of file to which rendering performance
+                                statistics measurements should be saved.
+                                Special tags {api}, {hw}, {time} and {tag} will be
+                                replaced.
+
+ Server options:
+      --port N                  network port to use
+      --bind ADDRESS[:PORT]     IP address (and optionally port) to bind to
+      --rcon-port N             Port to use for RCON
+      --rcon-bind ADDRESS:PORT  IP address and port to use for RCON
+      --rcon-password PASSWORD  Password for RCON
+      --server-settings FILE    Path to file with server settings. See
+                                data/server-settings.example.json
+      --use-server-whitelist    If the whitelist should be used.
+      --server-whitelist FILE   Path to file with server whitelist.
+      --server-banlist FILE     Path to file with server banlist.
+      --server-adminlist FILE   Path to file with server adminlist.
+      --console-log FILE        Path to file where a copy of the server's log
+                                will be stored
+      --server-id FILE          Path where server ID will be stored or read
+                                from
