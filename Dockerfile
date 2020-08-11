@@ -13,6 +13,5 @@ RUN addgroup --system --gid $GID spring && adduser --system --uid $UID spring --
 USER spring:spring
 
 ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} app.jar
-ADD config /
 ENTRYPOINT ["java","-jar","/app.jar"]
+COPY ${JAR_FILE} app.jar

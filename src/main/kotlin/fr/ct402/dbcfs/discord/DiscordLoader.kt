@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 class DiscordLoader (private val config: DiscordConfigProperties) {
-    val logger: Logger = LoggerFactory.getLogger(this.javaClass)
+    val logger: Logger = LoggerFactory.getLogger("${this.javaClass.packageName}.DiscordLoader")
 
     @EventListener(ApplicationReadyEvent::class)
     fun load() {

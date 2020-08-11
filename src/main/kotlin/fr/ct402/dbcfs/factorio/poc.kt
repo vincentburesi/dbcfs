@@ -1,8 +1,17 @@
 package fr.ct402.dbcfs.factorio
-
+/*
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import fr.ct402.dbcfs.persist.DbLoader
+import fr.ct402.dbcfs.persist.model.GameVersion
+import fr.ct402.dbcfs.persist.model.GameVersions
+import fr.ct402.dbcfs.persist.model.Platform
+import fr.ct402.dbcfs.persist.model.ReleaseType
 import khttp.get
+import me.liuwj.ktorm.dsl.eq
+import me.liuwj.ktorm.entity.add
+import me.liuwj.ktorm.entity.find
+import me.liuwj.ktorm.entity.sequenceOf
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -15,7 +24,10 @@ import kotlin.math.min
 
 @Component
 @Configuration
-class ApiLoader (private val config: FactorioConfigProperties) {
+class ApiLoader(
+        private val config: FactorioConfigProperties,
+        private val dbLoader: DbLoader
+) {
     val logger: Logger = LoggerFactory.getLogger(this.javaClass)
 
     @EventListener(ApplicationReadyEvent::class)
@@ -33,29 +45,6 @@ class ApiLoader (private val config: FactorioConfigProperties) {
     data class Latest(
             val experimental: Versions,
             val stable: Versions
-    )
-
-    enum class ReleaseType(val value: String) {
-        ALPHA("alpha"),
-        HEADLESS("headless"),
-        DEMO("demo")
-    }
-    enum class Platform(val value: String) {
-        WIN64("win64"),
-        WIN32("win32"),
-        WIN64_MANUAL("win64-manual"),
-        WIN32_MANUAL("win32-manual"),
-        OSX("osx"),
-        LINUX64("linux64"),
-        LINUX32("linux32")
-    }
-
-    data class GameVersion(
-            val versionNumber: String,
-            val releaseType: ReleaseType,
-            val platform: Platform,
-            val isStable: Boolean,
-            val path: String
     )
 
     fun compareVersionStrings(s1: String, s2: String): Int {
@@ -90,24 +79,41 @@ class ApiLoader (private val config: FactorioConfigProperties) {
             versionsLinks.add(html.takeWhile { it != '"' })
         }
 
+        val releaseTypes = mapOf("alpha" to ReleaseType.ALPHA, "headless" to ReleaseType.HEADLESS)
+        val platforms = mapOf(
+                "win64" to Platform.WIN64,
+                "win32" to Platform.WIN32,
+                "win64-manual" to Platform.WIN64_MANUAL,
+                "win32-manual" to Platform.WIN32_MANUAL,
+                "linux64" to Platform.LINUX64,
+                "linux32" to Platform.LINUX32,
+                "osx" to Platform.OSX
+        )
+
+
+        val seq = dbLoader.database.sequenceOf(GameVersions)
         val versions = versionsLinks.map(fun(path): GameVersion? {
             val parts = path.split('/')
-            val test = GameVersion(
-                    versionNumber = parts[0],
-                    releaseType = ReleaseType.values().firstOrNull { it.value == parts[1] } ?: return null,
-                    platform = Platform.values().firstOrNull { it.value == parts[2] } ?: return null,
-                    isStable = compareVersionStrings(parts[0], latest.stable.alpha) <= 0,
-                    path = path
-            )
-            return test
-        }).filterNotNull().filter {
-            it.releaseType != ReleaseType.DEMO
-        }.groupBy { it.versionNumber }
+
+            return GameVersion {
+                versionNumber = parts[0]
+                releaseType = releaseTypes[parts[1]] ?: return null
+                platform = platforms[parts[2]] ?: return null
+                isStable = compareVersionStrings(parts[0], latest.stable.alpha) >= 0
+                this.path = path
+            }
+        })
+                .filterNotNull()
+                .onEach { item ->
+                    val dbItem = seq.find { it.path eq item.path }
+                    if (dbItem == null)
+                        seq.add(item)
+                } // TODO rework as a true sync process
+                .groupBy { it.versionNumber }
 
         logger.info("Version sync is complete, ${versions.size} version(s) found.")
+
         //TODO Make something with versions (fill the DB)
-
-
 
 
         val toDownload = versions[latest.experimental.headless]
@@ -154,17 +160,11 @@ class ApiLoader (private val config: FactorioConfigProperties) {
         if (!folder.exists())
             folder.mkdir()
 
-//        val test = Runtime.getRuntime().exec("ls -la /mnt")
-//        while (test.isAlive)
-//            ; // Lolilol attente active :D
-//        logger.warn(test.inputStream.bufferedReader().use { it.readText() })
-//        logger.error(test.errorStream.bufferedReader().use { it.readText() })
-
         val cmd = "tar -xJ -C $folder -f ${file.path}"
         logger.info("Running : $cmd")
 
         val p = Runtime.getRuntime().exec(cmd)
-        while (p.isAlive) ; // Lolilol attente active :D
+        while (p.isAlive); // Lolilol attente active :D
         if (p.exitValue() == 0)
             logger.info("Successfully extracted archive")
         else {
@@ -174,8 +174,9 @@ class ApiLoader (private val config: FactorioConfigProperties) {
         }
 
         val factorio = Runtime.getRuntime().exec("$folder/factorio/bin/x64/factorio --help")
-        while (factorio.isAlive) ;
+        while (factorio.isAlive);
         logger.info("Successfully ran factorio !!!")
         logger.info(factorio.inputStream.bufferedReader().use { it.readText() })
     }
 }
+*/

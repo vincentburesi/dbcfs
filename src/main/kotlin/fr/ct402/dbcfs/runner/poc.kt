@@ -13,7 +13,7 @@ class ExecLoader () {
     @EventListener(ApplicationReadyEvent::class)
     fun load() {
         logger.info("Loading executable runner")
-        val p = Runtime.getRuntime().exec("ls")
+        val p = Runtime.getRuntime().exec(arrayOf("ls"))
         var i = 0
         while (p.isAlive)
             if (++i < 5)

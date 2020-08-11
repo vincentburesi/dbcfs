@@ -14,7 +14,7 @@ import java.sql.SQLException
 @Component
 @Configuration
 class DbLoader (private val config: DbConfigProperties) {
-    val logger: Logger = LoggerFactory.getLogger(this.javaClass)
+    val logger: Logger = LoggerFactory.getLogger("${this.javaClass.packageName}.DbLoader")
     val database = Database.connect(
             url = "jdbc:sqlite:${config.path}",
             driver = "org.sqlite.JDBC",
@@ -24,26 +24,8 @@ class DbLoader (private val config: DbConfigProperties) {
     @EventListener(ApplicationReadyEvent::class)
     fun load() {
         logger.info("Initializing DB")
-        setup()
+        setup(database)
+        logger.info("DB initialized")
     }
 
-    fun setup() {
-        database.useConnection { connection ->
-            val sql = """
-                CREATE TABLE IF NOT EXISTS t_profile (
-                    id INTEGER NOT NULL PRIMARY KEY,
-                    name TEXT NOT NULL
-                )
-            """.trimIndent()
-
-            connection.prepareStatement(sql).use {
-                try {
-                    it.execute()
-                    logger.info(sql)
-                } catch (e: SQLException) {
-                    logger.error(e.localizedMessage)
-                }
-            }
-        }
-    }
 }
