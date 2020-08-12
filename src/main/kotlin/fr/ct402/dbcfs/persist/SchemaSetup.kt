@@ -1,11 +1,14 @@
 package fr.ct402.dbcfs.persist
 
 import fr.ct402.dbcfs.persist.model.gameVersionSchema
+import fr.ct402.dbcfs.persist.model.modReleaseSchema
+import fr.ct402.dbcfs.persist.model.modSchema
+import fr.ct402.dbcfs.persist.model.profileSchema
 import me.liuwj.ktorm.database.Database
 import java.sql.SQLException
 
 fun setup(database: Database) {
-    arrayOf(gameVersionSchema).forEach { database.exec(it) }
+    arrayOf(gameVersionSchema, profileSchema, modSchema, modReleaseSchema).forEach { database.exec(it) }
 }
 
 fun Database.exec(statement: String) {

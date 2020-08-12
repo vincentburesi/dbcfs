@@ -1,5 +1,6 @@
 package fr.ct402.dbcfs.discord
 
+import fr.ct402.dbcfs.commons.getLogger
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 class DiscordLoader (private val config: DiscordConfigProperties) {
-    val logger: Logger = LoggerFactory.getLogger("${this.javaClass.packageName}.DiscordLoader")
+    val logger = getLogger()
 
     @EventListener(ApplicationReadyEvent::class)
     fun load() {
