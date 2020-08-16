@@ -15,5 +15,8 @@ fun compareVersionStrings(s1: String, s2: String): Int {
 }
 
 val baseDataDir = "/mnt"
+val discordAuthorizedFiles = setOf("map.zip", "server-settings.json", "map-gen-settings.json", "map-settings.json") //TODO Check the names
+val factorioExecutableRelativeLocation = "factorio/bin/x64/factorio"
+
 
 fun Any.getLogger() = LoggerFactory.getLogger(this.javaClass.simpleName.takeWhile { it != '$' })!!

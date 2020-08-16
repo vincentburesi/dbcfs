@@ -118,7 +118,7 @@ class DownloadApiService(
             folder.mkdir()
 
         val cmd = when (extension) {
-            "tar.xz" -> "tar -xJ -C $path -f $path.$extension"
+            "tar.xz" -> arrayOf("tar", "-xJ", "-C", path, "-f", "$path.$extension")
             else -> return false
         }
         val p = Runtime.getRuntime().exec(cmd)

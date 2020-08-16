@@ -8,10 +8,7 @@ import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.*
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.dsl.like
-import me.liuwj.ktorm.entity.filter
-import me.liuwj.ktorm.entity.find
-import me.liuwj.ktorm.entity.sequenceOf
-import me.liuwj.ktorm.entity.toList
+import me.liuwj.ktorm.entity.*
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
@@ -25,35 +22,46 @@ class ProfileManager (
         dbLoader: DbLoader
 ) {
     val logger = getLogger()
-    private var currentProfile: Profile? = null
+    final var currentProfile: Profile? = null
+        private set
     private val profileSequence = dbLoader.database.sequenceOf(Profiles)
     private val gameVersionSequence = dbLoader.database.sequenceOf(GameVersions)
 
-    fun swapProfile(profile: Profile) {
+    private fun swapProfile(profile: Profile) {
         currentProfile = profile
     }
 
+    /**
+     * Attempts to swap current profile
+     */
     fun swapProfile(name: String) : Boolean {
         swapProfile(profileSequence.find { it.name eq name } ?: return false)
         return true
     }
 
+    /**
+     * Attempts to create a profile with the given name and parameters
+     */
     fun createProfile(
             name: String,
-            targetGameVersion: String = DownloadApiService.getLatestVersions().stable.headless,
+            targetGameVersion: String? = null,
             allowExperimental: Boolean = false
-    ) {
+    ): Boolean {
+        val target = targetGameVersion ?: DownloadApiService.getLatestVersions().stable.headless
         val profile = Profile().apply {
             this.name = name
-            this.targetGameVersion = targetGameVersion
+            this.targetGameVersion = target
             this.allowExperimental = allowExperimental
-            //TODO set specific game version
-            flushChanges()
+            this.gameVersion = getMatchingVersion(target) ?: return false
         }
+        profileSequence.add(profile)
         swapProfile(profile)
+        return true
     }
 
-    fun getMatchingVersion(approxVersion: String): List<GameVersion>? {
+    private fun getMatchingVersion(approxVersion: String,
+                           buildType: BuildType = BuildType.HEADLESS,
+                           platform: Platform = Platform.LINUX64): GameVersion? {
         val candidates = gameVersionSequence
                 .filter { it.versionNumber like "$approxVersion%" }
                 .toList()
@@ -62,20 +70,17 @@ class ProfileManager (
                 .filter { compareVersionStrings(it, approxVersion) == 0 }
                 .sortedWith(Comparator { s1, s2 -> compareVersionStrings(s1, s2) })
                 .first()
-        return candidates[bestMatch]
+        return candidates[bestMatch]?.first { it.buildType == buildType && it.platform == platform }
     }
 
-    fun downloadGame(version: String): Boolean {
-        return downloadGame(
-                gameVersionSequence
-                .filter { it.buildType eq BuildType.HEADLESS }
-                .filter { it.platform eq Platform.LINUX64 }
-                .find { it.versionNumber eq version }
-                ?: return false
-        )
+    /**
+     * Attempt to download the latest game version for the current profile
+     */
+    fun downloadGame(): Boolean {
+        return downloadGame(currentProfile?.gameVersion ?: return false)
     }
 
-    fun downloadGame(version: GameVersion): Boolean {
+    private fun downloadGame(version: GameVersion): Boolean {
         if (version.platform != Platform.LINUX64
                 || version.buildType != BuildType.HEADLESS
                 || version.localPath != null)
@@ -93,13 +98,12 @@ class ProfileManager (
         return true
     }
 
-    @Order(2)
-    @EventListener(ApplicationReadyEvent::class)
+//    @Order(2)
+//    @EventListener(ApplicationReadyEvent::class)
     fun test() {
         logger.info("STARTING TEST")
         downloadApiService.syncGameVersions()
         downloadGame(getMatchingVersion("0.17")
-                ?.first { it.buildType == BuildType.HEADLESS && it.platform == Platform.LINUX64 }
                 ?.apply {
                     logger.info(this.toString())
                     logger.info(this.localPath ?: "THIS IS NULL AS EXPECTED")
