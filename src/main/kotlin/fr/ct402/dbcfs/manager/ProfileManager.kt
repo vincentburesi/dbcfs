@@ -19,6 +19,7 @@ import java.io.File
 @Component
 class ProfileManager (
         val downloadApiService: DownloadApiService,
+        val processManager: ProcessManager,
         dbLoader: DbLoader
 ) {
     val logger = getLogger()
@@ -27,7 +28,7 @@ class ProfileManager (
     private val profileSequence = dbLoader.database.sequenceOf(Profiles)
     private val gameVersionSequence = dbLoader.database.sequenceOf(GameVersions)
 
-    private fun swapProfile(profile: Profile) {
+    private fun swapProfile(profile: Profile?) {
         currentProfile = profile
     }
 
@@ -47,7 +48,15 @@ class ProfileManager (
             targetGameVersion: String? = null,
             allowExperimental: Boolean = false
     ): Boolean {
+        val existing = profileSequence.find { it.name eq name }
+        if (existing != null) {
+            swapProfile(existing)
+            logger.info("Profile already exists")
+            return false
+        }
+
         val target = targetGameVersion ?: DownloadApiService.getLatestVersions().stable.headless
+        logger.info("Attempting to create profile with target version $target")
         val profile = Profile().apply {
             this.name = name
             this.targetGameVersion = target
@@ -57,6 +66,21 @@ class ProfileManager (
         profileSequence.add(profile)
         swapProfile(profile)
         return true
+    }
+
+    /**
+     * Attempts to remove a profile with given name
+     */
+    fun removeProfile(name: String): Boolean {
+        if (processManager.currentProcessProfileName == name) processManager.stop()
+        if (currentProfile?.name == name) swapProfile(null)
+        val profile = profileSequence.find { it.name eq name }
+        if (profile != null) {
+            profileSequence.removeIf { it.name eq name }
+            //TODO Remove associated files
+            return true
+        }
+        return false
     }
 
     private fun getMatchingVersion(approxVersion: String,
@@ -69,8 +93,10 @@ class ProfileManager (
         val bestMatch = candidates.keys
                 .filter { compareVersionStrings(it, approxVersion) == 0 }
                 .sortedWith(Comparator { s1, s2 -> compareVersionStrings(s1, s2) })
-                .first()
-        return candidates[bestMatch]?.first { it.buildType == buildType && it.platform == platform }
+                .firstOrNull()
+        val version = candidates[bestMatch]?.first { it.buildType == buildType && it.platform == platform }
+        if (version == null) logger.warn("Error could not find version for $approxVersion")
+        return version
     }
 
     /**
@@ -82,12 +108,13 @@ class ProfileManager (
 
     private fun downloadGame(version: GameVersion): Boolean {
         if (version.platform != Platform.LINUX64
-                || version.buildType != BuildType.HEADLESS
-                || version.localPath != null)
+                || version.buildType != BuildType.HEADLESS)
             return false
         logger.info("Starting download procedure for ${version.versionNumber}")
-        val destination = File("$baseDataDir/bin/${version.versionNumber}")
 
+        if (version.localPath != null) return true
+
+        val destination = File("$baseDataDir/bin/${version.versionNumber}")
         if (destination.exists())
             return false
         destination.mkdirs()

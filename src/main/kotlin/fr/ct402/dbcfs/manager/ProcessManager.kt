@@ -13,6 +13,7 @@ class ProcessManager (
 ) {
     val logger = getLogger()
     private var currentProcess: Process? = null
+    final var currentProcessProfileName: String? = null; private set
 
     fun start(profile: Profile): Boolean {
         val factorioPath = profile.gameVersion.localPath ?: return false
@@ -28,9 +29,10 @@ class ProcessManager (
         ).let { it.plus(arrayOf("--server-whitelist", profile.serverWhitelist ?: return@let it)) }
         val p = Runtime.getRuntime().exec(cmd)
         val success = !p.waitFor(3L, TimeUnit.SECONDS)
-        if (success)
+        if (success) {
             currentProcess = p
-        else {
+            currentProcessProfileName = profile.name
+        } else {
             logger.error("Failed to build map, error log below :")
             logger.warn(p.inputStream.bufferedReader().use { it.readText() })
             logger.error(p.errorStream.bufferedReader().use { it.readText() })

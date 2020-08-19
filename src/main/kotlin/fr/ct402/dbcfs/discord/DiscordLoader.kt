@@ -8,14 +8,14 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
-@Component
-@Configuration
-class DiscordLoader (private val config: DiscordConfigProperties) {
-    val logger = getLogger()
-
-    @EventListener(ApplicationReadyEvent::class)
-    fun load() {
-        logger.info("Loading discord interface")
-        loadDiscordInterface(config)
-    }
-}
+//@Component
+//@Configuration
+//class DiscordLoader (private val config: DiscordConfigProperties) {
+//    val logger = getLogger()
+//
+//    @EventListener(ApplicationReadyEvent::class)
+//    fun load() {
+//        logger.info("Loading discord interface")
+//        loadDiscordInterface(config)
+//    }
+//}

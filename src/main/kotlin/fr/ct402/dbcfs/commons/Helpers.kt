@@ -20,3 +20,4 @@ val factorioExecutableRelativeLocation = "factorio/bin/x64/factorio"
 
 
 fun Any.getLogger() = LoggerFactory.getLogger(this.javaClass.simpleName.takeWhile { it != '$' })!!
+fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
