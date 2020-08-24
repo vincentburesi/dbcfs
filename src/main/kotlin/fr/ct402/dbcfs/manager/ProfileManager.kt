@@ -5,11 +5,11 @@ import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.baseDataDir
 import fr.ct402.dbcfs.commons.catch
 import fr.ct402.dbcfs.commons.compareVersionStrings
+import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.config.ServerSettings
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.*
-import khttp.get
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.dsl.like
 import me.liuwj.ktorm.entity.*
@@ -73,15 +73,16 @@ class ProfileManager (
     /**
      * Attempts to remove a profile with given name
      */
-    fun removeProfile(name: String): Boolean {
+    fun removeProfile(name: String, notifier: Notifier) {
         if (processManager.currentProcessProfileName == name) processManager.stop()
         if (currentProfile?.name == name) swapProfile(null)
         val profile = profileSequence.find { it.name eq name }
-        return if (profile != null) {
+        if (profile != null) {
             profileSequence.removeIf { it.name eq name }
             File(profile.localPath).apply { if (exists()) deleteRecursively() }
-            true
-        } else false
+            notifier.success("Profile $name successfully removed")
+        } else
+            notifier.error("Error, could not find profile with given name")
     }
 
     private fun getMatchingVersion(approxVersion: String,

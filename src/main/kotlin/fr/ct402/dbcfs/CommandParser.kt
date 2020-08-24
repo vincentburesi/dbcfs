@@ -50,9 +50,7 @@ class CommandParser (
 
     fun runRemoveProfileCommand(event: MessageReceivedEvent, args: List<String>) {
         val name = args.firstOrNull() ?: return missingArgument(event)
-        val result = profileManager.removeProfile(name)
-        val msg = if (result) "Profile $name successfully removed" else "Error, could not find profile with given name"
-        event.channel.sendMessage(msg).queue()
+        profileManager.removeProfile(name, Notifier(event))
     }
 
     fun runStartCommand(event: MessageReceivedEvent, args: List<String>) {
