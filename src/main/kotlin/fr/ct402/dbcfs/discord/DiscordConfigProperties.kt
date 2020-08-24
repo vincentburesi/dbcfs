@@ -6,5 +6,6 @@ import org.springframework.boot.context.properties.ConstructorBinding
 @ConstructorBinding
 @ConfigurationProperties(prefix = "dbcfs.discord")
 data class DiscordConfigProperties (
-        val token: String
+        val token: String,
+        val owner: String
 )

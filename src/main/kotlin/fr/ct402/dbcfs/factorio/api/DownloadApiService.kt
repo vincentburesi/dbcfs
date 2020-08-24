@@ -2,6 +2,7 @@ package fr.ct402.dbcfs.factorio.api;
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.compareVersionStrings
 import fr.ct402.dbcfs.commons.getLogger
 import fr.ct402.dbcfs.factorio.FactorioConfigProperties
@@ -26,13 +27,12 @@ import java.net.URL
 class DownloadApiService(
         private val config: FactorioConfigProperties,
         dbLoader: DbLoader
-) {
+): AbstractComponent() {
     companion object {
         val jsonMapper = jacksonObjectMapper()
         fun getLatestVersions() = jsonMapper.readValue<Latest>(URL("https://factorio.com/api/latest-releases"))
     }
 
-    val logger = getLogger()
     val gameVersionSequence = dbLoader.database.sequenceOf(GameVersions)
     val factorioDownloadUrl = "https://www.factorio.com/get-download/"
 

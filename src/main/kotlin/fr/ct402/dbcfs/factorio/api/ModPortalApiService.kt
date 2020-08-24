@@ -3,12 +3,14 @@ package fr.ct402.dbcfs.factorio.api
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.getLogger
 import fr.ct402.dbcfs.factorio.FactorioConfigProperties
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.Mod
 import fr.ct402.dbcfs.persist.model.Mods
 import khttp.get
+import me.liuwj.ktorm.dsl.batchInsert
 import me.liuwj.ktorm.entity.*
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Service
@@ -20,8 +22,7 @@ import kotlin.math.abs
 class ModPortalApiService(
         private val config: FactorioConfigProperties,
         val dbLoader: DbLoader
-) {
-    val logger = getLogger()
+): AbstractComponent() {
     fun modSequence() = dbLoader.database.sequenceOf(Mods)
     val jsonMapper = jacksonObjectMapper()
     fun factorioModPortalUrl(page: Int, pageSize: Int = 25) = "http://mods.factorio.com/api/mods" +
@@ -79,11 +80,12 @@ class ModPortalApiService(
         return true
     }
 
-    private fun Mod.updateOrAdd(add: Boolean) =
-            if (add) modSequence().add(this) else this.flushChanges()
-
     private fun updateDb(modList: List<Result>, existingMods: List<Mod>) =
-            modList.forEach { mod -> buildDbEntry(mod, existingMods.find { it.name == mod.name }) }
+            modList.forEach { mod ->
+                val existing = existingMods.find { it.name == mod.name }
+                buildDbEntry(mod, existing)?.updateOrAdd(existing == null)
+            }
+
 
     // Only updates the DB when the mod has changed in a significant way
     private fun Result.hasSignificantChange(old: Mod?) = (old == null
@@ -96,8 +98,8 @@ class ModPortalApiService(
             || abs(old.score - score) > 1.0F
             || old.latestReleaseDownloadUrl != latest_release?.download_url)
 
-    private fun buildDbEntry(mod: Result, existing: Mod? = null) {
-        (existing ?: Mod()).apply {
+    private fun buildDbEntry(mod: Result, existing: Mod? = null): Mod? {
+        return (existing ?: Mod()).apply {
             if (mod.hasSignificantChange(this)) {
                 name = mod.name
                 title = mod.title
@@ -109,9 +111,12 @@ class ModPortalApiService(
                 latestReleaseDownloadUrl = mod.latest_release!!.download_url
             } else {
                 logger.info("Mod ${mod.name} unchanged, skipped.")
-                return
+                return null
             }
-        }.updateOrAdd(existing == null)
+        }
     }
+
+    private fun Mod.updateOrAdd(add: Boolean) =
+            if (add) modSequence().add(this) else this.flushChanges()
 }
 

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Testing JSON Edit</title>
+	<script type="text/javascript" src="./jsoneditor.js"></script>
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/foundation/5.0.2/css/foundation.min.css'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.0.3/css/font-awesome.css'>
+</head>
+<body>
+	<h1>Test 1</h1>
+	<div class="row">
+    	<div id='editor_holder' class='medium-12 columns'></div>
+    </div>
+    <button id='submit'>Submit (console.log)</button>
+	<script type="text/javascript">
+		JSONEditor.defaults.theme = 'foundation5';
+    	JSONEditor.defaults.iconlib = 'fontawesome4';
+            var autoplaceControls = {
+                  type: "object",
+                  properties: {
+                        frequency: {
+                              type: "integer",
+                              default: 1
+                        },
+                        size: {
+                              type: "integer",
+                              default: 1
+                        },
+                        richness: {
+                              type: "integer",
+                              default: 1
+                        }
+                  }
+            }
+		// Initialize the editor with a JSON schema
+		var editor = new JSONEditor(document.getElementById('editor_holder'),{
+      		schema: {
+      			type: "object",
+      			title: "Map generation settings",
+      			properties: {
+      				terrain_segmentation: {
+      					type: "integer",
+                                    description: "Inverse of map scale",
+      					default: 1
+      				},
+                              water: {
+                                    type: "integer",
+                                    description: "Multiplier for water 'coverage' - higher increases the water level. Water level = 10 * log2(this value)",
+                                    default: 1
+                              },
+                              width: {
+                                    type: "integer",
+                                    description: "Width of map, in tiles; 0 means infinite",
+                                    default: 0
+                              },
+                              height: {
+                                    type: "integer",
+                                    description: "Height of map, in tiles; 0 means infinite",
+                                    default: 0
+                              },
+                              starting_area: {
+                                    type: "integer",
+                                    description: "Multiplier for 'biter free zone radius'",
+                                    default: 1
+                              },
+                              peaceful_mode: {
+                                    type: "boolean",
+                                    default: false
+                              },
+                              autoplace_controls: {
+                                    type: "object",
+                                    properties: {
+                                          coal: autoplaceControls,
+                                          stone: autoplaceControls,
+                                          "copper-ore": autoplaceControls,
+                                          "iron-ore": autoplaceControls,
+                                          "uranium-ore": autoplaceControls,
+                                          "crude-oil": autoplaceControls,
+                                          trees: autoplaceControls,
+                                          "enemy-base": autoplaceControls
+                                    }
+                              },
+                              cliff_settings: {
+                                    type: "object",
+                                    properties: {
+                                          name: {
+                                                type: "string",
+                                                description: "Name of the cliff prototype",
+                                                default: "cliff"
+                                          },
+                                          cliff_elevation: {
+                                                type: "integer",
+                                                description: "Elevation of first row of cliffs",
+                                                default: 10
+                                          },
+                                          cliff_elevation_interval: {
+                                                type: "integer",
+                                                description: "Elevation difference between successive rows of cliffs",
+                                                default: 10
+                                          },
+                                          richness: {
+                                                type: "integer",
+                                                description: "Multiplier for cliff continuity; 0 will result in no cliffs, 10 will make all cliff rows completely solid",
+                                                default: 1
+                                          }
+                                    }
+                              },
+                              property_expression_names: {
+                                    type: "object",
+                                    description: "Overrides for property value generators Elevation influences water and cliff placement Leave it blank to get 'normal' terrain. Use '0_16-elevation' to reproduce terrain from 0.16. Use '0_17-island' to get an island.",
+                                    properties: {
+                                          elevation: {
+                                                type: "string",
+                                                default: "0_17-island"
+                                          },
+                                          "control-setting:aux:bias": {
+                                                type: "string",
+                                                default: "0.300000"
+                                          },
+                                          "control-setting:aux:frequency:multiplier:": {
+                                                type: "string",
+                                                default: "1.333333"
+                                          },
+                                          "control-setting:moisture:bias:": {
+                                                type: "string",
+                                                default: "0.100000"
+                                          },
+                                          "control-setting:moisture:frequency:multiplier:": {
+                                                type: "string",
+                                                default: "0.500000"
+                                          }
+                                    }
+                              },
+                              starting_points: {
+                                    type: "array",
+                                    items: {
+                                          type: "object",
+                                          properties: {
+                                                x: {
+                                                      type: "integer"
+                                                },
+                                                y: {
+                                                      type: "integer"
+                                                }
+                                          }
+                                    },
+                                    default: [{x: 1000, y: 2000}]
+                              },
+                              seed: {
+                                    type: "integer",
+                                    description: "Use null for a random seed, number for a specific seed.",
+                                    default: null
+                              }
+      			},
+			    required: [
+
+			    ],
+			    "additionalProperties": true
+			}
+      });
+      // Hook up the submit button to log to the console
+      document.getElementById('submit').addEventListener('click',function() {
+	    // Get the value from the editor
+	    console.log(JSON.stringify(editor.getValue()));
+      });
+	</script>
+</body>
+</html>

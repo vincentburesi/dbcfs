@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Testing JSON Edit</title>
+    <script type="text/javascript" src="./jsoneditor.js"></script>
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/foundation/5.0.2/css/foundation.min.css'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.0.3/css/font-awesome.css'>
+</head>
+<body>
+<h1>Editing {{profileName}} settings</h1>
+<div class="row">
+    <div id='editor_holder' class='medium-12 columns'></div>
+</div>
+<button id='submit'>Apply</button>
+<script type="text/javascript">
+    JSONEditor.defaults.theme = 'foundation5';
+    JSONEditor.defaults.iconlib = 'fontawesome4';
+    // Initialize the editor with a JSON schema
+    var editor = new JSONEditor(document.getElementById('editor_holder'),{
+        schema: {
+            type: "object",
+            title: "Server settings",
+            properties: {
+                name: {
+                    type: "string",
+                    required: true,
+                    description: "Name of the game as it will appear in the game listing",
+                    default: "{{profileName}}"
+                },
+                description: {
+                    type: "string",
+                    description: "Description of the game that will appear in the listing",
+                    default: ""
+                },
+                tags: {
+                    type: "array",
+                    uniqueItems: true,
+                    description: "Game tags",
+                    items: {
+                        type: "string"
+                    }
+                },
+                max_players: {
+                    type: "number",
+                    description: "Maximum number of players allowed, admins can join even a full server. 0 means unlimited.",
+                    default: 0
+                },
+                visibility: {
+                    type: "object",
+                    default: {
+                        public: true,
+                        lan: true
+                    },
+                    properties: {
+                        public: {
+                            type: "boolean",
+                            description: "Game will be published on the official Factorio matching server"
+                        },
+                        lan: {
+                            type: "boolean",
+                            description: "Game will be broadcast on LAN"
+                        }
+                    }
+                },
+                username: {
+                    type: "string",
+                    description: "Your factorio.com login credentials. Required for games with visibility public"
+                },
+                password: {
+                    type: "string",
+                    description: "Your factorio.com login credentials. Required for games with visibility public"
+                },
+                token: {
+                    type: "string",
+                    description: "Authentication token. May be used instead of 'password' above."
+                },
+                game_password: {
+                    type: "string"
+                },
+                require_user_verification: {
+                    type: "boolean",
+                    description: "When set to true, the server will only allow clients that have a valid Factorio.com account",
+                    default: true
+                },
+                max_upload_in_kilobytes_per_second: {
+                    type: "number",
+                    description: "optional, default value is 0. 0 means unlimited.",
+                    default: 0
+                },
+                max_upload_slots: {
+                    type: "number",
+                    description: "optional, default value is 5. 0 means unlimited.",
+                    default: 5
+                },
+                minimum_latency_in_ticks: {
+                    type: "number",
+                    description: "optional one tick is 16ms in default speed, default value is 0. 0 means no minimum.",
+                    default: 0
+                },
+                ignore_player_limit_for_returning_players: {
+                    type: "boolean",
+                    description: "Players that played on this map already can join even when the max player limit was reached.",
+                    default: false
+                },
+                allow_commands: {
+                    enum: ["true", "false", "admins-only"],
+                    description: "possible values are, true, false and admins-only",
+                    default: "admins-only"
+                },
+                autosave_interval: {
+                    type: "number",
+                    description: "Autosave interval in minutes",
+                    default: 10
+                },
+                autosave_slots: {
+                    type: "number",
+                    description: "server autosave slots, it is cycled through when the server autosaves.",
+                    default: 5
+                },
+                afk_autokick_interval: {
+                    type: "number",
+                    description: "How many minutes until someone is kicked when doing nothing, 0 for never.",
+                    default: 0
+                },
+                auto_pause: {
+                    type: "boolean",
+                    description: "Whether should the server be paused when no players are present.",
+                    default: true
+                },
+                only_admins_can_pause_the_game: {
+                    type: "boolean",
+                    description: "If true, only admins can pause the game.",
+                    default: true
+                },
+                autosave_only_on_server: {
+                    type: "boolean",
+                    description: "Whether autosaves should be saved only on server or also on all connected clients. Default is true.",
+                    default: true
+                },
+                non_blocking_saving: {
+                    type: "boolean",
+                    description: "Highly experimental feature, enable only at your own risk of losing your saves. On UNIX systems, server will fork itself to create an autosave. Autosaving on connected Windows clients will be disabled regardless of autosave_only_on_server option.",
+                    default: true
+                },
+                minimum_segment_size: {
+                    type: "number",
+                    description: "Long network messages are split into segments that are sent over multiple ticks. Their size depends on the number of peers currently connected. Increasing the segment size will increase upload bandwidth requirement for the server and download bandwidth requirement for clients. This setting only affects server outbound messages. Changing these settings can have a negative impact on connection stability for some clients.",
+                    default: 25
+                },
+                minimum_segment_size_peer_count: {
+                    type: "number",
+                    description: "Long network messages are split into segments that are sent over multiple ticks. Their size depends on the number of peers currently connected. Increasing the segment size will increase upload bandwidth requirement for the server and download bandwidth requirement for clients. This setting only affects server outbound messages. Changing these settings can have a negative impact on connection stability for some clients.",
+                    default: 20
+                },
+                maximum_segment_size: {
+                    type: "number",
+                    description: "Long network messages are split into segments that are sent over multiple ticks. Their size depends on the number of peers currently connected. Increasing the segment size will increase upload bandwidth requirement for the server and download bandwidth requirement for clients. This setting only affects server outbound messages. Changing these settings can have a negative impact on connection stability for some clients.",
+                    default: 100
+                },
+                maximum_segment_size_peer_count: {
+                    type: "number",
+                    description: "Long network messages are split into segments that are sent over multiple ticks. Their size depends on the number of peers currently connected. Increasing the segment size will increase upload bandwidth requirement for the server and download bandwidth requirement for clients. This setting only affects server outbound messages. Changing these settings can have a negative impact on connection stability for some clients.",
+                    default: 10
+                }
+            },
+            "required": [
+                "name",
+                "description",
+                "tags",
+                "max_players",
+                "visibility",
+                "username",
+                "password",
+                "token",
+                "game_password",
+                "require_user_verification",
+                "max_upload_in_kilobytes_per_second",
+                "max_upload_slots",
+                "minimum_latency_in_ticks",
+                "ignore_player_limit_for_returning_players",
+                "allow_commands",
+                "autosave_interval",
+                "autosave_slots",
+                "afk_autokick_interval",
+                "auto_pause",
+                "only_admins_can_pause_the_game",
+                "autosave_only_on_server",
+                "non_blocking_saving",
+                "minimum_segment_size",
+                "minimum_segment_size_peer_count",
+                "maximum_segment_size",
+                "maximum_segment_size_peer_count"
+            ],
+            "additionalProperties": true
+        }
+    });
+    // Hook up the submit button to log to the console
+    document.getElementById('submit').addEventListener('click',function() {
+        // Get the value from the editor
+        console.log(JSON.stringify(editor.getValue()));
+    });
+</script>
+</body>
+</html>

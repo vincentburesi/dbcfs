@@ -1,28 +1,29 @@
 package fr.ct402.dbcfs.manager
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.baseDataDir
+import fr.ct402.dbcfs.commons.catch
 import fr.ct402.dbcfs.commons.compareVersionStrings
-import fr.ct402.dbcfs.commons.getLogger
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
+import fr.ct402.dbcfs.factorio.config.ServerSettings
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.*
+import khttp.get
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.dsl.like
 import me.liuwj.ktorm.entity.*
-import org.slf4j.LoggerFactory
-import org.springframework.boot.context.event.ApplicationReadyEvent
-import org.springframework.context.event.EventListener
-import org.springframework.core.annotation.Order
+import net.dv8tion.jda.api.entities.Message
 import org.springframework.stereotype.Component
 import java.io.File
+import java.lang.Exception
 
 @Component
 class ProfileManager (
         val downloadApiService: DownloadApiService,
         val processManager: ProcessManager,
         dbLoader: DbLoader
-) {
-    val logger = getLogger()
+): AbstractComponent() {
     final var currentProfile: Profile? = null
         private set
     private val profileSequence = dbLoader.database.sequenceOf(Profiles)
@@ -63,6 +64,7 @@ class ProfileManager (
             this.allowExperimental = allowExperimental
             this.gameVersion = getMatchingVersion(target) ?: return false
         }
+        File(profile.localPath).apply { if (!exists()) mkdirs() }
         profileSequence.add(profile)
         swapProfile(profile)
         return true
@@ -75,12 +77,11 @@ class ProfileManager (
         if (processManager.currentProcessProfileName == name) processManager.stop()
         if (currentProfile?.name == name) swapProfile(null)
         val profile = profileSequence.find { it.name eq name }
-        if (profile != null) {
+        return if (profile != null) {
             profileSequence.removeIf { it.name eq name }
-            //TODO Remove associated files
-            return true
-        }
-        return false
+            File(profile.localPath).apply { if (exists()) deleteRecursively() }
+            true
+        } else false
     }
 
     private fun getMatchingVersion(approxVersion: String,
@@ -125,17 +126,34 @@ class ProfileManager (
         return true
     }
 
-//    @Order(2)
-//    @EventListener(ApplicationReadyEvent::class)
-    fun test() {
-        logger.info("STARTING TEST")
-        downloadApiService.syncGameVersions()
-        downloadGame(getMatchingVersion("0.17")
-                ?.apply {
-                    logger.info(this.toString())
-                    logger.info(this.localPath ?: "THIS IS NULL AS EXPECTED")
-                }
-                ?: return
-        ).let { if (!it) logger.error("FAILURE") else logger.info("SUCCESS") }
+    /**
+     * TODO Make generic (when with objecttype)
+     */
+    fun setServerSettings(profileName: String, serverSettings: ServerSettings): Boolean {
+        val profile =
+                (if (currentProfile?.name == profileName) currentProfile
+                else profileSequence.find { it.name eq profileName })
+                        ?: return false
+
+        return {
+            File(profile.localPath + "/server-settings.json")
+                    .writeText(jacksonObjectMapper().writeValueAsString(serverSettings))
+            true
+        } catch { false }
+    }
+
+    fun uploadConfigFile(attachment: Message.Attachment): Boolean {
+        val profile = currentProfile ?: return false
+        File(profile.localPath + "/" + attachment.fileName).apply {
+            logger.info("Trying to download ${attachment.proxyUrl} to ${this.absolutePath}")
+            attachment.downloadToFile(this).thenAccept { file ->
+                logger.info("Saved attachment to " + file.getName())
+            }.exceptionally {
+                logger.error("Error could not download attachement : ${it.message}")
+                throw Exception(it.message)
+            }
+        }
+        logger.info("Success!")
+        return true
     }
 }

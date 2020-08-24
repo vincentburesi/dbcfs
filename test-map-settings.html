@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Testing JSON Edit</title>
+	<script type="text/javascript" src="./jsoneditor.js"></script>
+    <link rel='stylesheet' href='https://cdn.jsdelivr.net/foundation/5.0.2/css/foundation.min.css'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.0.3/css/font-awesome.css'>
+</head>
+<body>
+	<h1>Test 1</h1>
+	<div class="row">
+    	<div id='editor_holder' class='medium-12 columns'></div>
+    </div>
+    <button id='submit'>Submit (console.log)</button>
+	<script type="text/javascript">
+		JSONEditor.defaults.theme = 'foundation5';
+    	JSONEditor.defaults.iconlib = 'fontawesome4';
+		// Initialize the editor with a JSON schema
+		var editor = new JSONEditor(document.getElementById('editor_holder'),{
+      		schema: {
+      			type: "object",
+                        additionalProperties: true,
+      			title: "Map settings",
+      			properties: {
+                              difficulty_settings: {
+                                    type: "object",
+                                    additionalProperties: true,
+                                    properties: {
+                                          recipe_difficulty: {
+                                                type: "integer",
+                                                default: 0
+                                          },
+                                          technology_difficulty: {
+                                                type: "integer",
+                                                default: 0
+                                          },
+                                          technology_price_multiplier: {
+                                                type: "integer",
+                                                default: 0
+                                          },
+                                          research_queue_setting: {
+                                                typer: "string",
+                                                enum: ["always", "after-victory", "never"],
+                                                default: "after-victory"
+                                          }
+                                    }
+                              },
+                              pollution: {
+                                    type: "object",
+                                    additionalProperties: true,
+                                    properties: {
+                                          enabled: {
+                                                type: "boolean",
+                                                default: true
+                                          },
+                                          diffusion_ratio: {
+                                                type: "number",
+                                                default: 0.02
+                                          },
+                                          min_to_diffuse: {
+                                                type: "integer",
+                                                default: 15
+                                          },
+                                          ageing: {
+                                                type: "integer",
+                                                default: 1
+                                          },
+                                          expected_max_per_chunk: {
+                                                type: "integer",
+                                                default: 150
+                                          },
+                                          min_to_show_per_chunk: {
+                                                type: "integer",
+                                                default: 50
+                                          },
+                                          min_pollution_to_damage_trees: {
+                                                type: "integer",
+                                                default: 60
+                                          },
+                                          pollution_with_max_forest_damage: {
+                                                type: "integer",
+                                                default: 150
+                                          },
+                                          pollution_per_tree_damage: {
+                                                type: "integer",
+                                                default: 50
+                                          },
+                                          pollution_restored_per_tree_damage: {
+                                                type: "integer",
+                                                default: 10
+                                          },
+                                          max_pollution_to_restore_trees: {
+                                                type: "integer",
+                                                default: 20
+                                          },
+                                          enemy_attack_pollution_consumption_modifier: {
+                                                type: "integer",
+                                                default: 1
+                                          }
+                                    }
+                              },
+                              enemy_evolution: {
+                                    type: "object",
+                                    additionalProperties: true,
+                                    properties: {
+                                          enabled: {
+                                                type: "boolean",
+                                                default: true
+                                          },
+                                          time_factor: {
+                                                type: "number",
+                                                default: 0.000004
+                                          },
+                                          destroy_factor: {
+                                                type: "number",
+                                                default: 0.002
+                                          },
+                                          pollution_factor: {
+                                                type: "number",
+                                                default: 9e-7
+                                          }
+                                    }
+                              },
+                              enemy_expansion: {
+                                    type: "object",
+                                    additionalProperties: true,
+                                    properties: {
+                                          enabled: {
+                                                type: "boolean",
+                                                default: true
+                                          },
+                                          min_base_spacing: {
+                                                type: "integer",
+                                                default: 3
+                                          },
+                                          max_expansion_distance: {
+                                                type: "integer",
+                                                default: 7
+                                          },
+                                          friendly_base_influence_radius: {
+                                                type: "integer",
+                                                default: 2
+                                          },
+                                          enemy_building_influence_radius: {
+                                                type: "integer",
+                                                default: 2
+                                          },
+                                          building_coefficient: {
+                                                type: "number",
+                                                default: 0.1
+                                          },
+                                          other_base_coefficient: {
+                                                type: "integer",
+                                                default: 2
+                                          },
+                                          neighbouring_chunk_coefficient: {
+                                                type: "number",
+                                                default: 0.5
+                                          },
+                                          neighbouring_base_chunk_coefficient: {
+                                                type: "number",
+                                                default: 0.4
+                                          },
+                                          max_colliding_tiles_coefficient: {
+                                                type: "number",
+                                                default: 0.9
+                                          },
+                                          settler_group_min_size: {
+                                                type: "integer",
+                                                default: 5
+                                          },
+                                          settler_group_max_size: {
+                                                type: "integer",
+                                                default: 20
+                                          },
+                                          min_expansion_cooldown: {
+                                                type: "integer",
+                                                default: 14400
+                                          },
+                                          max_expansion_cooldown: {
+                                                type: "integer",
+                                                default: 216000
+                                          }
+                                    }
+                              },
+                              unit_group: {
+                                    type: "object",
+                                    additionalProperties: true,
+                                    properties: {
+                                          min_group_gathering_time: {
+                                                type: "integer",
+                                                default: 3600
+                                          },
+                                          max_group_gathering_time: {
+                                                type: "integer",
+                                                default: 36000
+                                          },
+                                          max_wait_time_for_late_members: {
+                                                type: "integer",
+                                                default: 7200
+                                          },
+                                          max_group_radius: {
+                                                type: "integer",
+                                                default: 30
+                                          },
+                                          min_group_radius: {
+                                                type: "integer",
+                                                default: 5
+                                          },
+                                          max_member_speedup_when_behind: {
+                                                type: "number",
+                                                default: 1.4
+                                          },
+                                          max_member_slowdown_when_ahead: {
+                                                type: "number",
+                                                default: 0.6
+                                          },
+                                          max_group_slowdown_factor: {
+                                                type: "number",
+                                                default: 0.3
+                                          },
+                                          max_group_member_fallback_factor: {
+                                                type: "integer",
+                                                default: 3
+                                          },
+                                          member_disown_distance: {
+                                                type: "integer",
+                                                default: 10
+                                          },
+                                          tick_tolerance_when_member_arrives: {
+                                                type: "integer",
+                                                default: 60
+                                          },
+                                          max_gathering_unit_groups: {
+                                                type: "integer",
+                                                default: 30
+                                          },
+                                          max_unit_group_size: {
+                                                type: "integer",
+                                                default: 200
+                                          }
+                                    }
+                              },
+                              steering: {
+                                    type: "object",
+                                    properties: {
+                                          default: {
+                                                type: "object",
+                                                properties: {
+                                                      radius: {
+                                                            type: "number",
+                                                            default: 1.2
+                                                      },
+                                                      separation_force: {
+                                                            type: "number",
+                                                            default: 0.005
+                                                      },
+                                                      separation_factor: {
+                                                            type: "number",
+                                                            default: 1.2
+                                                      },
+                                                      force_unit_fuzzy_goto_behaviour: {
+                                                            type: "boolean",
+                                                            default: false
+                                                      }
+                                                }
+                                          },
+                                          moving: {
+                                                type: "object",
+                                                properties: {
+                                                      radius: {
+                                                            type: "number",
+                                                            default: 3
+                                                      },
+                                                      separation_force: {
+                                                            type: "number",
+                                                            default: 0.01
+                                                      },
+                                                      separation_factor: {
+                                                            type: "number",
+                                                            default: 3
+                                                      },
+                                                      force_unit_fuzzy_goto_behaviour: {
+                                                            type: "boolean",
+                                                            default: false
+                                                      }
+                                                }
+                                          }
+                                    }
+                              },
+                              path_finder: {
+                                    type: "object",
+                                    additionalProperties: true,
+                                    properties: {
+                                          fwd2bwd_ratio: {
+                                                type: "integer",
+                                                default: 5
+                                          },
+                                          goal_pressure_ratio: {
+                                                type: "integer",
+                                                default: 2
+                                          },
+                                          max_steps_worked_per_tick: {
+                                                type: "integer",
+                                                default: 100
+                                          },
+                                          max_work_done_per_tick: {
+                                                type: "integer",
+                                                default: 8000
+                                          },
+                                          use_path_cache: {
+                                                type: "boolean",
+                                                default: true
+                                          },
+                                          short_cache_size: {
+                                                type: "integer",
+                                                default: 5
+                                          },
+                                          long_cache_size: {
+                                                type: "integer",
+                                                default: 25
+                                          },
+                                          short_cache_min_cacheable_distance: {
+                                                type: "integer",
+                                                default: 10
+                                          },
+                                          short_cache_min_algo_steps_to_cache: {
+                                                type: "integer",
+                                                default: 50
+                                          },
+                                          long_cache_min_cacheable_distance: {
+                                                type: "integer",
+                                                default: 30
+                                          },
+                                          cache_max_connect_to_cache_steps_multiplier: {
+                                                type: "integer",
+                                                default: 100
+                                          },
+                                          cache_accept_path_start_distance_ratio: {
+                                                type: "number",
+                                                default: 0.2
+                                          },
+                                          cache_accept_path_end_distance_ratio: {
+                                                type: "number",
+                                                default: 0.15
+                                          },
+                                          negative_cache_accept_path_start_distance_ratio: {
+                                                type: "number",
+                                                default: 0.3
+                                          },
+                                          negative_cache_accept_path_end_distance_ratio: {
+                                                type: "number",
+                                                default: 0.3
+                                          },
+                                          cache_path_start_distance_rating_multiplier: {
+                                                type: "integer",
+                                                default: 10
+                                          },
+                                          cache_path_end_distance_rating_multiplier: {
+                                                type: "integer",
+                                                default: 20
+                                          },
+                                          stale_enemy_with_same_destination_collision_penalty: {
+                                                type: "integer",
+                                                default: 30
+                                          },
+                                          ignore_moving_enemy_collision_distance: {
+                                                type: "integer",
+                                                default: 5
+                                          },
+                                          enemy_with_different_destination_collision_penalty: {
+                                                type: "integer",
+                                                default: 30
+                                          },
+                                          general_entity_collision_penalty: {
+                                                type: "integer",
+                                                default: 10
+                                          },
+                                          general_entity_subsequent_collision_penalty: {
+                                                type: "integer",
+                                                default: 3
+                                          },
+                                          extended_collision_penalty: {
+                                                type: "integer",
+                                                default: 3
+                                          },
+                                          max_clients_to_accept_any_new_request: {
+                                                type: "integer",
+                                                default: 10
+                                          },
+                                          max_clients_to_accept_short_new_request: {
+                                                type: "integer",
+                                                default: 100
+                                          },
+                                          direct_distance_to_consider_short_request: {
+                                                type: "integer",
+                                                default: 100
+                                          },
+                                          short_request_max_steps: {
+                                                type: "integer",
+                                                default: 1000
+                                          },
+                                          short_request_ratio: {
+                                                type: "number",
+                                                default: 0.5
+                                          },
+                                          min_steps_to_check_path_find_termination: {
+                                                type: "integer",
+                                                default: 2000
+                                          },
+                                          start_to_goal_cost_multiplier_to_terminate_path_find: {
+                                                type: "integer",
+                                                default: 500
+                                          },
+                                          overload_levels: {
+                                                type: "array",
+                                                items: {
+                                                      type: "integer"
+                                                },
+                                                default: [0, 100, 500]
+                                          },
+                                          overload_multipliers: {
+                                                type: "array",
+                                                items: {
+                                                      type: "integer"
+                                                },
+                                                default: [2, 3, 4]
+                                          },
+
+                                    }
+                              },
+                              max_failed_behaviour_count: {
+                                    type: "integer",
+                                    default: 3
+                              }
+      			},
+			    "required": [
+			    ],
+			    "additionalProperties": true
+			}
+      });
+      // Hook up the submit button to log to the console
+      document.getElementById('submit').addEventListener('click',function() {
+	    // Get the value from the editor
+	    console.log(JSON.stringify(editor.getValue()));
+      });
+	</script>
+</body>
+</html>

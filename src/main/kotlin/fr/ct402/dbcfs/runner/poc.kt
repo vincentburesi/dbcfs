@@ -1,5 +1,6 @@
 package fr.ct402.dbcfs.runner
 
+import fr.ct402.dbcfs.commons.AbstractComponent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -7,8 +8,7 @@ import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 @Component
-class ExecLoader () {
-    val logger: Logger = LoggerFactory.getLogger(this.javaClass)
+class ExecLoader: AbstractComponent() {
 
     @EventListener(ApplicationReadyEvent::class)
     fun load() {

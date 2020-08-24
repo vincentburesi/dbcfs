@@ -1,20 +1,25 @@
 package fr.ct402.dbcfs
 
+import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.getLogger
 import fr.ct402.dbcfs.commons.nextOrNull
+import fr.ct402.dbcfs.discord.DiscordInterface
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
 import fr.ct402.dbcfs.manager.ProcessManager
 import fr.ct402.dbcfs.manager.ProfileManager
 import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 class Command(val help: String, val run: CommandParser.(MessageReceivedEvent, List<String>) -> Unit, val depthLevel: Int = 1) {
     operator fun invoke(receiver: CommandParser, event: MessageReceivedEvent, args: List<String>) = receiver.run(event, args)
 }
 
-val commandPrefix = "."
+const val commandPrefix = "."
 
 fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "help" -> Command("This is the help command documentation, it should come into form later", CommandParser::runHelpCommand)
@@ -32,6 +37,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "build" -> Command("Builds current profile", CommandParser::runBuildCommand)
     "swap" -> Command("Set given profile as current one", CommandParser::runSwapCommand)
     "sync" -> Command("Synchronize the game version and mod list", CommandParser::runSyncCommand)
+    "test" -> Command("Used for testing features in dev", CommandParser::runTestCommand)
     else -> null
 }
 
@@ -41,8 +47,7 @@ class CommandParser (
         val processManager: ProcessManager,
         val downloadApiService: DownloadApiService,
         val modPortalApiService: ModPortalApiService
-) {
-    val logger = getLogger()
+): AbstractComponent() {
 
     fun runRemoveProfileCommand(event: MessageReceivedEvent, args: List<String>) {
         val name = args.firstOrNull() ?: return missingArgument(event)
@@ -78,7 +83,7 @@ class CommandParser (
     fun runBuildCommand(event: MessageReceivedEvent, args: List<String>) {
         val profile = profileManager.currentProfile
         val msg = if (profile != null) {
-            val result = profileManager.downloadGame()
+            val result = profileManager.downloadGame() && processManager.genMap(profile)
             if (result) "Profile is ready, you can start the server." else "Error : Could not download the game. See logs for more informations"
         } else "No profile is currently selected, please select or create a profile first (See create profile or swap)"
         event.channel.sendMessage(msg).queue()
@@ -102,13 +107,23 @@ class CommandParser (
             logger.error(e.message)
             "Error during synchronisation, see logs for more informations"
         }
-        event.channel.sendMessage(msg).queue()
+        val channel = event.channel
+        val action = channel.sendMessage(msg)
+        action.queue (
+                { logger.info("SUCCESS: ${it.contentRaw}") }, //success
+                {
+                    logger.error(it.message)
+                    it.printStackTrace()
+                } //failure
+        )
     }
 
     fun runTestCommand(event: MessageReceivedEvent, args: List<String>) {
         val argsConcat = args.run { if (isEmpty()) "" else reduce { acc, s -> "$acc $s" } }
         val msg = "Le parsing des commandes fonctionne :\n$argsConcat"
-        event.channel.sendMessage(msg).queue()
+        val sent = event.channel.sendMessage(msg).complete()
+        sent?.editMessage(sent.contentRaw + "\n Et je peux edit mes propres messages !")
+                ?.queueAfter(5L, TimeUnit.SECONDS)
     }
 
     fun runHelpCommand(event: MessageReceivedEvent, args: List<String>) {

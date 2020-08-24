@@ -15,7 +15,12 @@ interface Profile : Entity<Profile> {
     var serverSettings: String?
     var serverWhitelist: String?
     var gameVersion: GameVersion
+
+    val localPath: String
+            get() = "/mnt/profiles/$name"
 }
+
+
 
 object Profiles : Table<Profile>("t_profile") {
     val id = int("rowid").primaryKey().bindTo { it.id }

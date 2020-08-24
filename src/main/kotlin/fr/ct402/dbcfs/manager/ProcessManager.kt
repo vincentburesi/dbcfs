@@ -1,34 +1,40 @@
 package fr.ct402.dbcfs.manager
 
+import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.factorioExecutableRelativeLocation
-import fr.ct402.dbcfs.commons.getLogger
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.Profile
 import org.springframework.stereotype.Component
+import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlin.IllegalStateException
 
 @Component
 class ProcessManager (
         dbLoader: DbLoader
-) {
-    val logger = getLogger()
+): AbstractComponent() {
     private var currentProcess: Process? = null
     final var currentProcessProfileName: String? = null; private set
 
     fun start(profile: Profile): Boolean {
-        val factorioPath = profile.gameVersion.localPath ?: return false
-        if (currentProcess?.isAlive == true) return false
+        val factorioPath = profile.gameVersion.localPath ?: throw IllegalStateException("Cannot start server, game has not been downloaded")
+        if (currentProcess?.isAlive == true) throw IllegalStateException("Server already started")
+
         val cmd = arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
-                "--start-server", "/mnt/test-map.zip", //FIXME
-                "--server-settings", profile.serverSettings ?: "$factorioPath/factorio/data/server-settings.example.json",
-                "--console-log", "/mnt/test-logfile-run" //TODO
+                "--start-server", "${profile.localPath}/map.zip",
+                "--server-settings", profile.findConfig("server-settings"),
+                "--console-log", "${profile.localPath}/test-logfile-run" //TODO
 //                "--mod-directory", "/mnt/...", //TODO
 //                "--map-gen-settings", "map.zip",
 //                "--map-settings", "map.zip",
 //                "--config", "config file",
-        ).let { it.plus(arrayOf("--server-whitelist", profile.serverWhitelist ?: return@let it)) }
+        ).let {
+            it.plus(arrayOf("--server-whitelist", profile.serverWhitelist ?: return@let it))
+        }
+
         val p = Runtime.getRuntime().exec(cmd)
         val success = !p.waitFor(3L, TimeUnit.SECONDS)
+
         if (success) {
             currentProcess = p
             currentProcessProfileName = profile.name
@@ -41,11 +47,12 @@ class ProcessManager (
     }
 
     fun genMap(profile: Profile): Boolean {
-        val factorioPath = profile.gameVersion.localPath ?: return false
+        val factorioPath = profile.gameVersion.localPath ?: throw IllegalStateException("Cannot start server, game has not been downloaded")
+
         val p = Runtime.getRuntime().exec(arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
-                "--create", "/mnt/test-map.zip", //FIXME
-                "--map-gen-settings", profile.mapGenSettings ?: "$factorioPath/factorio/data/map-gen-settings.example.json",
-                "--map-settings", profile.mapSettings ?: "$factorioPath/factorio/data/map-settings.example.json",
+                "--create", "${profile.localPath}/map.zip",
+                "--map-gen-settings", profile.findConfig("map-gen-settings"),
+                "--map-settings", profile.findConfig("map-settings"),
                 "--console-log", "/mnt/test-logfile-genmap" // TODO
 //                "--mod-directory", "/mnt/...", //TODO
 //                "--config", "config file",
@@ -57,6 +64,16 @@ class ProcessManager (
             logger.error(p.errorStream.bufferedReader().use { it.readText() })
         }
         return success
+    }
+
+    private fun Profile.findConfig(config: String): String {
+        return File("$localPath/$config.json").run {
+            when {
+                exists() -> absolutePath
+                gameVersion.localPath != null -> "${gameVersion.localPath}/factorio/data/$config.example.json"
+                else -> throw IllegalStateException("Cannot find default config when game has not been downloaded (Redesign for fix)")
+            }
+        }
     }
 
     fun stop(): Boolean {

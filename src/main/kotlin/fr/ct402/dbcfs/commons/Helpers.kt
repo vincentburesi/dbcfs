@@ -18,6 +18,27 @@ val baseDataDir = "/mnt"
 val discordAuthorizedFiles = setOf("map.zip", "server-settings.json", "map-gen-settings.json", "map-settings.json") //TODO Check the names
 val factorioExecutableRelativeLocation = "factorio/bin/x64/factorio"
 
-
 fun Any.getLogger() = LoggerFactory.getLogger(this.javaClass.simpleName.takeWhile { it != '$' })!!
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
+
+//TODO Improve on debug logs
+const val debugMode = true
+inline infix fun <T> (() -> T).catch(c: () -> T) =
+        try {
+            this()
+        } catch(e: Exception) {
+            e.getLogger().error(e.message)
+            if (debugMode) e.printStackTrace()
+            c()
+        }
+
+// Allows you to write
+//val test = { 5 / 0 } catch { 42 }
+// test == 42 and exception details have been logged
+
+// same code without helper
+//val test2 = try { 5 / 0 } catch (e: Exception) {
+//    e.getLogger().error(e.message)
+//    if (debugMode) e.printStackTrace()
+//    42
+//}

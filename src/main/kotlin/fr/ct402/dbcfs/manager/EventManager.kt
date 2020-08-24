@@ -1,17 +1,15 @@
 package fr.ct402.dbcfs.manager
 
-import fr.ct402.dbcfs.commons.getLogger
+import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import org.springframework.stereotype.Component
-import java.sql.SQLException
 
 @Component
 class EventManager (
         val profileManager: ProfileManager,
         val processManager: ProcessManager,
         val downloadApiService: DownloadApiService
-) {
-    val logger = getLogger()
+): AbstractComponent() {
 
     fun syncGameVersion() =
             downloadApiService.syncGameVersions()
