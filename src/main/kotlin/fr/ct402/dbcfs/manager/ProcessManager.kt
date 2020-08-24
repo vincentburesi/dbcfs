@@ -2,8 +2,11 @@ package fr.ct402.dbcfs.manager
 
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.factorioExecutableRelativeLocation
+import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.Profile
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.springframework.stereotype.Component
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -13,13 +16,12 @@ import kotlin.IllegalStateException
 class ProcessManager (
         dbLoader: DbLoader
 ): AbstractComponent() {
+    private val mutex = Mutex()
     private var currentProcess: Process? = null
     final var currentProcessProfileName: String? = null; private set
 
-    fun start(profile: Profile): Boolean {
+    suspend fun start(profile: Profile, notifier: Notifier) {
         val factorioPath = profile.gameVersion.localPath ?: throw IllegalStateException("Cannot start server, game has not been downloaded")
-        if (currentProcess?.isAlive == true) throw IllegalStateException("Server already started")
-
         val cmd = arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
                 "--start-server", "${profile.localPath}/map.zip",
                 "--server-settings", profile.findConfig("server-settings"),
@@ -32,18 +34,22 @@ class ProcessManager (
             it.plus(arrayOf("--server-whitelist", profile.serverWhitelist ?: return@let it))
         }
 
-        val p = Runtime.getRuntime().exec(cmd)
-        val success = !p.waitFor(3L, TimeUnit.SECONDS)
+        mutex.withLock {
+            if (currentProcess?.isAlive == true) throw IllegalStateException("Server already started")
 
-        if (success) {
-            currentProcess = p
-            currentProcessProfileName = profile.name
-        } else {
-            logger.error("Failed to build map, error log below :")
-            logger.warn(p.inputStream.bufferedReader().use { it.readText() })
-            logger.error(p.errorStream.bufferedReader().use { it.readText() })
+            val p = Runtime.getRuntime().exec(cmd)
+            val success = !p.waitFor(3L, TimeUnit.SECONDS)
+
+            if (success) {
+                currentProcess = p
+                currentProcessProfileName = profile.name
+                notifier.success("Server successfully started")
+            } else {
+                notifier.error("Failed to start server, see logs for details")
+                logger.warn(p.inputStream.bufferedReader().use { it.readText() })
+                logger.error(p.errorStream.bufferedReader().use { it.readText() })
+            }
         }
-        return success
     }
 
     fun genMap(profile: Profile): Boolean {

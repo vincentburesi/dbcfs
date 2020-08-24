@@ -19,6 +19,7 @@ class Command(val help: String, val run: CommandParser.(MessageReceivedEvent, Li
 }
 
 const val commandPrefix = "."
+const val noProfileSelectedMessage = "No profile is currently selected, please select or create a profile first (See create profile or swap)"
 
 fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "help" -> Command("This is the help command documentation, it should come into form later", CommandParser::runHelpCommand)
@@ -56,11 +57,14 @@ class CommandParser (
 
     fun runStartCommand(event: MessageReceivedEvent, args: List<String>) {
         val profile = profileManager.currentProfile
-        val msg = if (profile != null) {
-            val result = processManager.start(profile)
-            if (result) "Server started successfully" else "Error : Could not start server, see logs for more informations"
-        } else "No profile is currently selected, please select or create a profile first (See create profile or swap)"
-        event.channel.sendMessage(msg).queue()
+        if (profile == null) {
+            event.channel.sendMessage(noProfileSelectedMessage).queue()
+            return
+        } else
+            GlobalScope.launch {
+                val msg = event.channel.sendMessage("Starting server").complete()
+                processManager.start(profile, Notifier(msg))
+            }
     }
 
     fun runSwapCommand(event: MessageReceivedEvent, args: List<String>) {

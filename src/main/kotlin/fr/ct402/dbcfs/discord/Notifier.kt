@@ -39,8 +39,18 @@ class Notifier (
         return (intervalInSeconds * 1_000) - (elapsedInNanoseconds / 1_000_000)
     }
 
-    fun update(str: String, force: Boolean = false) {
-        logger.info(str)
+    fun success(str: String) =
+            update(str, true)
+
+    fun error(str: String) =
+            update(str, true) { logger.error(str) }
+
+    fun update(
+            str: String,
+            force: Boolean = false,
+            log: () -> Unit = { logger.info(str) }
+    ) {
+        log()
         runBlocking {
             mutex.withLock {
                 nextMessage = str

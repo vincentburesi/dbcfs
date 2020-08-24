@@ -94,7 +94,7 @@ class DownloadApiService(
         )
 
         if (res.statusCode != 200) {
-            notifier.update("Failed to recover version list, error code : ${res.statusCode}", force = true)
+            notifier.error("Failed to recover version list, error code : ${res.statusCode}")
             return
         }
 
@@ -102,7 +102,7 @@ class DownloadApiService(
         val versions = parseDownloadLinks(res.text, latest.stable.alpha)
         notifier.update("Contacted Factorio WebSite, Updating DB...")
         updateDb(versions)
-        notifier.update("Successfully synced game versions", force = true)
+        notifier.success("Successfully synced game versions")
     }
 
     private fun inferFileExtension(headers: Map<String, String>) = headers["Content-Disposition"]

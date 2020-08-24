@@ -62,7 +62,7 @@ class ModPortalApiService(
             }
             return acc
         } catch (e: Exception) {
-            notifier.update("An error occured during mod retrieval", force = true)
+            notifier.error("An error occured during mod retrieval")
             return null
         }
     }
@@ -74,7 +74,7 @@ class ModPortalApiService(
         val existingMods = modSequence().toList()
         notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)...")
         updateDb(modList, existingMods, notifier)
-        notifier.update("Successfully synced mod versions", force = true)
+        notifier.success("Successfully synced mod versions")
         return true
     }
 
