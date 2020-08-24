@@ -4,7 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.compareVersionStrings
-import fr.ct402.dbcfs.commons.getLogger
+import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.FactorioConfigProperties
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.GameVersion
@@ -16,7 +16,6 @@ import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.add
 import me.liuwj.ktorm.entity.find
 import me.liuwj.ktorm.entity.sequenceOf
-import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Service
 import java.io.File
@@ -88,19 +87,22 @@ class DownloadApiService(
         }
     }
 
-    fun syncGameVersions() {
+    fun syncGameVersions(notifier: Notifier) {
         val latest = getLatestVersions()
         val res = get("https://www.factorio.com/download/archive",
                 cookies = mapOf(Pair("session", config.cookie))
         )
 
         if (res.statusCode != 200) {
-            logger.error("Failed to recover version list, error code : ${res.statusCode}")
+            notifier.update("Failed to recover version list, error code : ${res.statusCode}", force = true)
             return
         }
 
+        notifier.update("Contacted Factorio WebSite, parsing...")
         val versions = parseDownloadLinks(res.text, latest.stable.alpha)
+        notifier.update("Contacted Factorio WebSite, Updating DB...")
         updateDb(versions)
+        notifier.update("Successfully synced game versions", force = true)
     }
 
     private fun inferFileExtension(headers: Map<String, String>) = headers["Content-Disposition"]

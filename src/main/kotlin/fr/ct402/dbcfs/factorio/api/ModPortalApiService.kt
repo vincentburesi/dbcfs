@@ -4,13 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import fr.ct402.dbcfs.commons.AbstractComponent
-import fr.ct402.dbcfs.commons.getLogger
+import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.FactorioConfigProperties
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.Mod
 import fr.ct402.dbcfs.persist.model.Mods
 import khttp.get
-import me.liuwj.ktorm.dsl.batchInsert
 import me.liuwj.ktorm.entity.*
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Service
@@ -44,18 +43,18 @@ class ModPortalApiService(
     data class InfoJson(val factorio_version: String)
     data class ModList(val pagination: Pagination, val results: List<Result>)
 
-    fun retrieveModList(): MutableList<Result>? {
+    fun retrieveModList(notifier: Notifier): MutableList<Result>? {
         val pageSize = 200
         try {
             var i = 0
             var count = 1
             var acc: MutableList<Result> = arrayListOf()
             while (++i <= count) {
-                logger.info("Downloading page $i (page size: $pageSize, starting at ${(i - 1) * pageSize})")
+                notifier.update("Obtaining page $i of $count (page size: $pageSize, starting at ${(i - 1) * pageSize})...")
                 val res = get(factorioModPortalUrl(i, pageSize))
                 if (res.statusCode != 200) {
                     logger.error("Error: Mod API returned error status code for : ${factorioModPortalUrl(i, pageSize)}")
-                    continue
+                    continue //TODO Notify user with a warning
                 }
                 val page = jsonMapper.readValue<ModList>(res.text)
                 count = page.pagination.page_count
@@ -63,27 +62,29 @@ class ModPortalApiService(
             }
             return acc
         } catch (e: Exception) {
-            logger.error(e.message ?: "An unknown error occured during mod retrieval.")
+            notifier.update("An error occured during mod retrieval", force = true)
             return null
         }
     }
 
     private fun List<Result>.sanitize(): List<Result> = this.filter { it.latest_release != null }
 
-    fun syncModList(): Boolean {
-        logger.info("Starting mod list sync")
-        val modList = retrieveModList()?.sanitize() ?: return false
+    fun syncModList(notifier: Notifier): Boolean {
+        val modList = retrieveModList(notifier)?.sanitize() ?: return false
         val existingMods = modSequence().toList()
-        logger.info("Updating DB")
-        updateDb(modList, existingMods)
-        logger.info("Mod list sync finished")
+        notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)...")
+        updateDb(modList, existingMods, notifier)
+        notifier.update("Successfully synced mod versions", force = true)
         return true
     }
 
-    private fun updateDb(modList: List<Result>, existingMods: List<Mod>) =
-            modList.forEach { mod ->
+    private fun updateDb(modList: List<Result>, existingMods: List<Mod>, notifier: Notifier) =
+            modList.forEachIndexed { index, mod ->
                 val existing = existingMods.find { it.name == mod.name }
                 buildDbEntry(mod, existing)?.updateOrAdd(existing == null)
+                if (index % 200 == 0)
+                    notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)..." +
+                            " ${ (index * 100) / modList.size }%")
             }
 
 
@@ -110,7 +111,7 @@ class ModPortalApiService(
                 score = mod.score
                 latestReleaseDownloadUrl = mod.latest_release!!.download_url
             } else {
-                logger.info("Mod ${mod.name} unchanged, skipped.")
+                logger.debug("Mod ${mod.name} unchanged, skipped.")
                 return null
             }
         }

@@ -1,19 +1,18 @@
 package fr.ct402.dbcfs
 
 import fr.ct402.dbcfs.commons.AbstractComponent
-import fr.ct402.dbcfs.commons.getLogger
 import fr.ct402.dbcfs.commons.nextOrNull
-import fr.ct402.dbcfs.discord.DiscordInterface
+import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
 import fr.ct402.dbcfs.manager.ProcessManager
 import fr.ct402.dbcfs.manager.ProfileManager
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.entities.ChannelType
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 
 class Command(val help: String, val run: CommandParser.(MessageReceivedEvent, List<String>) -> Unit, val depthLevel: Int = 1) {
     operator fun invoke(receiver: CommandParser, event: MessageReceivedEvent, args: List<String>) = receiver.run(event, args)
@@ -23,7 +22,6 @@ const val commandPrefix = "."
 
 fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "help" -> Command("This is the help command documentation, it should come into form later", CommandParser::runHelpCommand)
-    "test" -> Command("Commande de test, la doc viendra ici", CommandParser::runTestCommand)
     "create" -> when (it.nextOrNull()) {
         "profile" -> Command("Usage: create profile <name> [<version> experimental]", CommandParser::runCreateProfileCommand, 2)
         else -> null
@@ -99,23 +97,14 @@ class CommandParser (
     }
 
     fun runSyncCommand(event: MessageReceivedEvent, args: List<String>) {
-        val msg = try {
-            downloadApiService.syncGameVersions()
-            modPortalApiService.syncModList()
-            "Synchronisation successful"
-        } catch (e: Exception) {
-            logger.error(e.message)
-            "Error during synchronisation, see logs for more informations"
+        GlobalScope.launch {
+            val gameSyncMessage = event.channel.sendMessage("Starting game versions sync...").complete()
+            downloadApiService.syncGameVersions(Notifier(gameSyncMessage))
         }
-        val channel = event.channel
-        val action = channel.sendMessage(msg)
-        action.queue (
-                { logger.info("SUCCESS: ${it.contentRaw}") }, //success
-                {
-                    logger.error(it.message)
-                    it.printStackTrace()
-                } //failure
-        )
+        GlobalScope.launch {
+            val modsSyncMessage = event.channel.sendMessage("Starting mods versions sync...").complete()
+            modPortalApiService.syncModList(Notifier(modsSyncMessage))
+        }
     }
 
     fun runTestCommand(event: MessageReceivedEvent, args: List<String>) {

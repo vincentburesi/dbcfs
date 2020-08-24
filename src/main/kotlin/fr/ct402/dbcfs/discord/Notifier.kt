@@ -19,13 +19,15 @@ class Notifier (
 
     private val updater = suspend updater@{
         mutex.withLock {
-            val next = nextMessage ?: return@updater
-            if (next != currentMessage) {
+            val next = nextMessage
+            if (next != null && next != currentMessage) {
+                logger.warn("Updating: $next")
                 currentMessage = next
                 nextMessage = null
                 discordMessage.editMessage(next).queue()
-                lastUpdate = System.nanoTime()
             }
+            lastUpdate = System.nanoTime()
+            job = null
         }
     }
 
@@ -33,7 +35,8 @@ class Notifier (
         val elapsedInNanoseconds = mutex.withLock {
             System.nanoTime() - lastUpdate
         }
-        return (intervalInSeconds * 1000) - (elapsedInNanoseconds / 1000)
+        logger.warn("Elapsed: $elapsedInNanoseconds ns, delay: ${(intervalInSeconds * 1000) - (elapsedInNanoseconds / 1000)}")
+        return (intervalInSeconds * 1_000) - (elapsedInNanoseconds / 1_000_000)
     }
 
     fun update(str: String, force: Boolean = false) {
@@ -45,7 +48,6 @@ class Notifier (
 
             if (force) {
                 job?.cancel()
-                job = null
                 updater()
             } else
                 job = job ?: GlobalScope.launch {
@@ -58,6 +60,6 @@ class Notifier (
     }
 
     companion object {
-        const val intervalInSeconds = 5
+        const val intervalInSeconds = 3
     }
 }
