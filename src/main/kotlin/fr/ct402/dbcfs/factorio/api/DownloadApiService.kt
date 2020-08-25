@@ -9,8 +9,8 @@ import fr.ct402.dbcfs.factorio.FactorioConfigProperties
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.GameVersion
 import fr.ct402.dbcfs.persist.model.GameVersions
-import fr.ct402.dbcfs.persist.model.Platform
-import fr.ct402.dbcfs.persist.model.BuildType
+import fr.ct402.dbcfs.persist.model.GameVersion.Platform
+import fr.ct402.dbcfs.persist.model.GameVersion.BuildType
 import khttp.get
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.add

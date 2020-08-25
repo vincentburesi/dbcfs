@@ -3,9 +3,20 @@ package fr.ct402.dbcfs.discord
 import fr.ct402.dbcfs.CommandParser
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.discordAuthorizedFiles
+import fr.ct402.dbcfs.manager.DiscordAuthManager
 import fr.ct402.dbcfs.manager.ProfileManager
+import fr.ct402.dbcfs.persist.DbLoader
+import fr.ct402.dbcfs.persist.model.AuthorizedId
+import fr.ct402.dbcfs.persist.model.AuthorizedIds
+import me.liuwj.ktorm.dsl.eq
+import me.liuwj.ktorm.entity.add
+import me.liuwj.ktorm.entity.removeIf
+import me.liuwj.ktorm.entity.sequenceOf
+import me.liuwj.ktorm.entity.toList
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -14,22 +25,21 @@ import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-import java.io.File
 import java.lang.Exception
-import java.lang.NullPointerException
 
 @Component
 @Configuration
 class DiscordInterface(
         val config: DiscordConfigProperties,
         val commandParser: CommandParser,
-        val profileManager: ProfileManager
-): AbstractComponent() {
-    val listener: ListenerAdapter = object: ListenerAdapter() {
+        val profileManager: ProfileManager,
+        val discordAuthManager: DiscordAuthManager
+) : AbstractComponent() {
+    val listener: ListenerAdapter = object : ListenerAdapter() {
         override fun onReady(event: ReadyEvent) = logger.info("Discord interface successfully connected")
 
         override fun onMessageReceived(event: MessageReceivedEvent) {
-            if (event.author.isAuthorized()) {
+            if (discordAuthManager.isAuthorized(event)) {
                 if (event.message.attachments.isEmpty())
                     handleCommand(event)
                 else
@@ -42,7 +52,7 @@ class DiscordInterface(
         private var jdaInternal: JDA? = null
 
         val jda: JDA
-        get() = jdaInternal ?: throw IllegalStateException("JDA not initialized")
+            get() = jdaInternal ?: throw IllegalStateException("JDA not initialized")
     }
 
     @EventListener(ApplicationReadyEvent::class)
@@ -51,10 +61,6 @@ class DiscordInterface(
         jdaInternal = JDABuilder.createDefault(config.token)
                 .addEventListeners(listener)
                 .build()
-    }
-
-    fun User.isAuthorized(): Boolean {
-        return (!isBot) && (name == config.owner) //FIXME
     }
 
     fun handleAttachments(event: MessageReceivedEvent) {
@@ -66,33 +72,11 @@ class DiscordInterface(
                     else
                         "Error adding ${it.fileName}: Current profile is not selected"
                 } else
-                    "Error cannot add ${it.fileName}, name does not match authorized (${ discordAuthorizedFiles.reduce { acc, s -> "$acc, $s" } })"
+                    "Error cannot add ${it.fileName}, name does not match authorized (${discordAuthorizedFiles.reduce { acc, s -> "$acc, $s" }})"
             } catch (e: Exception) {
                 "Error downloading ${it.fileName}: ${e.message}"
             }
             event.channel.sendMessage(msg).queue()
-//
-//                logger.info("Trying to download to /mnt/test/${it?.fileName}")
-//                logger.info("URL: ${it?.proxyUrl}")
-//
-//                                    val file = File("/mnt/${it.fileName}")
-//                                    val res = get(it.proxyUrl, stream = true)
-//                                    for (chunk in res.contentIterator(1024))
-//                                        file.appendBytes(chunk)
-//
-//                                    it?.retrieveInputStream()?.thenAccept { input ->
-//                                        val file = File("/mnt/test/${it.fileName}")
-//                                        file.outputStream().use { output ->
-//                                            input.copyTo(output)
-//                                        }
-//                                    }
-//
-//                it?.downloadToFile(File("/mnt/test/${it.fileName}"))?.thenAccept { file ->
-//                    logger.info("Saved attachment to " + file.getName())
-//                }?.exceptionally { t ->
-//                    logger.error("Error could not download attachement : ${t.localizedMessage}")
-//                    null
-//                }
         }
     }
 
@@ -102,4 +86,5 @@ class DiscordInterface(
         logger.info("Message received stripped : ${event.message.contentStripped}")
         commandParser.parseCommand(event)
     }
+
 }

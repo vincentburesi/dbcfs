@@ -20,8 +20,6 @@ interface Profile : Entity<Profile> {
             get() = "/mnt/profiles/$name"
 }
 
-
-
 object Profiles : Table<Profile>("t_profile") {
     val id = int("rowid").primaryKey().bindTo { it.id }
     val name = varchar("name").bindTo { it.name }

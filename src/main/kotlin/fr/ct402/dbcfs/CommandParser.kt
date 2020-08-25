@@ -2,9 +2,11 @@ package fr.ct402.dbcfs
 
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.nextOrNull
+import fr.ct402.dbcfs.discord.DiscordInterface
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
+import fr.ct402.dbcfs.manager.DiscordAuthManager
 import fr.ct402.dbcfs.manager.ProcessManager
 import fr.ct402.dbcfs.manager.ProfileManager
 import kotlinx.coroutines.GlobalScope
@@ -30,6 +32,8 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
         "profile" -> Command("See remove-profile, remove-user, remove-file", CommandParser::runRemoveProfileCommand, 2)
         else -> null
     }
+    "authorize" -> Command("Adds mentionned @user and @roles to allowed whitelist", CommandParser::runAuthorizeCommand)
+    "unauthorize" -> Command("Removes mentionned @user and @roles from allowed whitelist", CommandParser::runUnauthorizeCommand)
     "start" -> Command("Starts server for current profile", CommandParser::runStartCommand)
     "stop" -> Command("Stops the running process, if any", CommandParser::runStopCommand)
     "build" -> Command("Builds current profile", CommandParser::runBuildCommand)
@@ -44,13 +48,22 @@ class CommandParser (
         val profileManager: ProfileManager,
         val processManager: ProcessManager,
         val downloadApiService: DownloadApiService,
-        val modPortalApiService: ModPortalApiService
+        val modPortalApiService: ModPortalApiService,
+        val discordAuthManager: DiscordAuthManager
 ): AbstractComponent() {
 
     fun runRemoveProfileCommand(event: MessageReceivedEvent, args: List<String>) {
         val name = args.firstOrNull() ?: return missingArgument(event)
 
         profileManager.removeProfile(name, Notifier(event))
+    }
+
+    fun runAuthorizeCommand(event: MessageReceivedEvent, args: List<String>) {
+        discordAuthManager.addAuthorized(event.message, Notifier(event))
+    }
+
+    fun runUnauthorizeCommand(event: MessageReceivedEvent, args: List<String>) {
+        discordAuthManager.removeAuthorized(event.message, Notifier(event))
     }
 
     fun runStartCommand(event: MessageReceivedEvent, args: List<String>) {
@@ -110,11 +123,15 @@ class CommandParser (
     }
 
     fun runTestCommand(event: MessageReceivedEvent, args: List<String>) {
-        val argsConcat = args.run { if (isEmpty()) "" else reduce { acc, s -> "$acc $s" } }
-        val msg = "Le parsing des commandes fonctionne :\n$argsConcat"
-        val sent = event.channel.sendMessage(msg).complete()
-        sent?.editMessage(sent.contentRaw + "\n Et je peux edit mes propres messages !")
-                ?.queueAfter(5L, TimeUnit.SECONDS)
+        args.forEach {
+            logger.info(it)
+        }
+        logger.warn(event.author.id)
+//        val argsConcat = args.run { if (isEmpty()) "" else reduce { acc, s -> "$acc $s" } }
+//        val msg = "Le parsing des commandes fonctionne :\n$argsConcat"
+//        val sent = event.channel.sendMessage(msg).complete()
+//        sent?.editMessage(sent.contentRaw + "\n Et je peux edit mes propres messages !")
+//                ?.queueAfter(5L, TimeUnit.SECONDS)
     }
 
     fun runHelpCommand(event: MessageReceivedEvent, args: List<String>) {

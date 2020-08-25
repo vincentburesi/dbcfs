@@ -10,6 +10,8 @@ import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.config.ServerSettings
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.*
+import fr.ct402.dbcfs.persist.model.GameVersion.Platform
+import fr.ct402.dbcfs.persist.model.GameVersion.BuildType
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.dsl.like
 import me.liuwj.ktorm.entity.*

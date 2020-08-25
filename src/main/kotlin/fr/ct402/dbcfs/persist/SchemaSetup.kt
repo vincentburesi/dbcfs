@@ -5,7 +5,7 @@ import me.liuwj.ktorm.database.Database
 import java.sql.SQLException
 
 fun setup(database: Database) {
-    arrayOf(gameVersionSchema, profileSchema, modSchema, modReleaseSchema, modReleaseProfileMappingSchema)
+    arrayOf(gameVersionSchema, profileSchema, modSchema, modReleaseSchema, modReleaseProfileMappingSchema, authorizedIdSchema)
             .forEach { database.exec(it) }
 }
 

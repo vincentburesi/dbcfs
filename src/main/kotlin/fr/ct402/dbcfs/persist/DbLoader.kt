@@ -2,6 +2,7 @@ package fr.ct402.dbcfs.persist
 
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.getLogger
+import fr.ct402.dbcfs.commons.orderDbLoad
 import me.liuwj.ktorm.database.Database
 import me.liuwj.ktorm.database.asIterable
 import me.liuwj.ktorm.support.sqlite.SQLiteDialect
@@ -23,7 +24,7 @@ class DbLoader (private val config: DbConfigProperties): AbstractComponent() {
             dialect = SQLiteDialect()
     )
 
-    @Order(1)
+    @Order(orderDbLoad)
     @EventListener(ApplicationReadyEvent::class)
     fun load() {
         logger.info("Initializing DB")
