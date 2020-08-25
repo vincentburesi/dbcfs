@@ -74,7 +74,7 @@ class CommandParser (
         val profile = profileManager.currentProfile ?: return noCurrentProfile(event)
 
         GlobalScope.launch {
-            val msg = event.channel.sendMessage("Starting server").complete()
+            val msg = event.channel.sendMessage("Starting server...").complete()
             processManager.start(profile, Notifier(msg))
         }
     }

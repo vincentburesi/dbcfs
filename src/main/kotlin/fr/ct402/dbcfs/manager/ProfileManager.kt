@@ -4,6 +4,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import fr.ct402.dbcfs.commons.*
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
+import fr.ct402.dbcfs.factorio.config.MapGenSettings
+import fr.ct402.dbcfs.factorio.config.MapSettings
 import fr.ct402.dbcfs.factorio.config.ServerSettings
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.*
@@ -30,6 +32,7 @@ class ProfileManager (
     private val profileSequence = dbLoader.database.sequenceOf(Profiles)
     private val gameVersionSequence = dbLoader.database.sequenceOf(GameVersions)
     private val secureRandom = SecureRandom()
+    private val jsonMapper = jacksonObjectMapper()
 
     private fun swapProfile(profile: Profile?) {
         currentProfile = profile
@@ -157,6 +160,20 @@ class ProfileManager (
                     .writeText(jacksonObjectMapper().writeValueAsString(serverSettings))
             true
         } catch { false }
+    }
+
+    fun uploadConfigFile(profile: Profile, settings: Any): Boolean {
+        val configFileName = when (settings) {
+            is ServerSettings -> "server-settings.json"
+            is MapSettings -> "map-settings.json"
+            is MapGenSettings -> "map-gen-settings.json"
+            else -> return false
+        }
+
+        val jsonString = jsonMapper.writeValueAsString(settings)
+        logger.info("Received json (${settings::class}): $jsonString")
+        File(profile.localPath + "/" + configFileName).writeText(jsonString)
+        return true
     }
 
     fun uploadConfigFile(attachment: Message.Attachment): Boolean {

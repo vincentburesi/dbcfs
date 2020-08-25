@@ -13,7 +13,7 @@
 <div class="row">
     <div id='editor_holder' class='medium-12 columns'></div>
 </div>
-<button id='submit'>Submit (console.log)</button>
+<button id='submit'>Apply</button>
 <script type="text/javascript">
     JSONEditor.defaults.theme = 'foundation5';
     JSONEditor.defaults.iconlib = 'fontawesome4';
@@ -441,11 +441,7 @@
             "additionalProperties": true
         }
     });
-    // Hook up the submit button to log to the console
-    document.getElementById('submit').addEventListener('click',function() {
-        // Get the value from the editor
-        console.log(JSON.stringify(editor.getValue()));
-    });
 </script>
+{{>edit-settings-post-script}}
 </body>
 </html>
