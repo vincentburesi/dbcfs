@@ -88,6 +88,7 @@ class DownloadApiService(
     }
 
     fun syncGameVersions(notifier: Notifier) {
+        notifier.update("Starting game version sync...", force = true)
         val latest = getLatestVersions()
         val res = get("https://www.factorio.com/download/archive",
                 cookies = mapOf(Pair("session", config.cookie))

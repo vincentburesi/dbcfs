@@ -1,10 +1,14 @@
 package fr.ct402.dbcfs.commons
 
+import fr.ct402.dbcfs.discord.Notifier
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
-import java.security.SecureRandom
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.min
+import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
 
 fun compareVersionStrings(s1: String, s2: String): Int {
     val n1 = s1.split('.').map { it.toInt() }
@@ -37,6 +41,12 @@ inline infix fun <T> (() -> T).catch(c: () -> T) =
             c()
         }
 
+fun <R> Throwable.multicatch(vararg classes: KClass<*>, block: () -> R): R {
+    if (classes.any { this::class.isSubclassOf(it) }) {
+        return block()
+    } else throw this
+}
+
 fun parseDateTime(str: String): LocalDateTime =
         LocalDateTime.parse(str, DateTimeFormatter.ISO_DATE_TIME)
 fun printDateTime(dateTime: LocalDateTime): String =
@@ -46,4 +56,18 @@ const val tokenValidityInMinutes = 60L
 const val tokenLength = 64
 val tokenAllowedChars = ('A'..'Z').joinToString("") + ('a'..'z').joinToString("") + ('0'..'9').joinToString("")
 
+fun <R> Notifier.launchAsCoroutine(block: suspend () -> R) {
+    GlobalScope.launch {
+        try {
+            block()
+        } catch (e: Exception) {
+            this@launchAsCoroutine print e
+        }
+    }
+}
+
+class NoCurrentProfileException: RuntimeException("No profile is currently selected, please select or create a profile first (See create profile or swap)")
+class ProfileNotFoundException(name: String): RuntimeException("No profile found matching this name: $name")
+class MissingArgumentException(cmd: String, argName: String): RuntimeException("$cmd: Missing $argName argument")
+class MatchingVersionNotFound(version: String): RuntimeException("Could not find matching version for $version. Try to sync the server or check factorio version list")
 

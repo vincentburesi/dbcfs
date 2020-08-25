@@ -29,6 +29,9 @@ class ProfileManager (
 ): AbstractComponent() {
     final var currentProfile: Profile? = null
         private set
+    val currentProfileOrThrow
+        get() = currentProfile ?: throw NoCurrentProfileException()
+
     private val profileSequence = dbLoader.database.sequenceOf(Profiles)
     private val gameVersionSequence = dbLoader.database.sequenceOf(GameVersions)
     private val secureRandom = SecureRandom()
@@ -48,10 +51,8 @@ class ProfileManager (
     /**
      * Attempts to swap current profile
      */
-    fun swapProfile(name: String) : Boolean {
-        swapProfile(profileSequence.find { it.name eq name } ?: return false)
-        return true
-    }
+    fun swapProfile(name: String) =
+            swapProfile(profileSequence.find { it.name eq name } ?: throw ProfileNotFoundException(name))
 
     /**
      * Attempts to create a profile with the given name and parameters
@@ -59,27 +60,27 @@ class ProfileManager (
     fun createProfile(
             name: String,
             targetGameVersion: String? = null,
-            allowExperimental: Boolean = false
-    ): Boolean {
+            allowExperimental: Boolean = false,
+            notifier: Notifier
+    ) {
         val existing = profileSequence.find { it.name eq name }
         if (existing != null) {
-            swapProfile(existing)
-            logger.info("Profile already exists")
-            return false
+            notifier.error("Profile already exists")
+            return
         }
 
         val target = targetGameVersion ?: DownloadApiService.getLatestVersions().stable.headless
-        logger.info("Attempting to create profile with target version $target")
+        notifier.update("Attempting to create profile with target version $target")
         val profile = Profile().apply {
             this.name = name
             this.targetGameVersion = target
             this.allowExperimental = allowExperimental
-            this.gameVersion = getMatchingVersion(target) ?: return false
+            this.gameVersion = getMatchingVersion(target) ?: throw MatchingVersionNotFound(target)
         }
         File(profile.localPath).apply { if (!exists()) mkdirs() }
         profileSequence.add(profile)
         swapProfile(profile)
-        return true
+        notifier.success("Profile $name successfully created with version ${profile.gameVersion.versionNumber}")
     }
 
     /**

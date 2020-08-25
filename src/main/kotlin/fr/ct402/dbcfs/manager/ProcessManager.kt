@@ -21,6 +21,7 @@ class ProcessManager (
     final var currentProcessProfileName: String? = null; private set
 
     suspend fun start(profile: Profile, notifier: Notifier) {
+        notifier.update("Starting server...", force = true)
         val factorioPath = profile.gameVersion.localPath ?: throw IllegalStateException("Cannot start server, game has not been downloaded")
         val cmd = arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
                 "--start-server", "${profile.localPath}/map.zip",

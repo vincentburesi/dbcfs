@@ -70,6 +70,7 @@ class ModPortalApiService(
     private fun List<Result>.sanitize(): List<Result> = this.filter { it.latest_release != null }
 
     fun syncModList(notifier: Notifier): Boolean {
+        notifier.update("Starting mod versions sync...", force = true)
         val modList = retrieveModList(notifier)?.sanitize() ?: return false
         val existingMods = modSequence().toList()
         notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)...")

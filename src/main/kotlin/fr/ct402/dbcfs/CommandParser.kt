@@ -1,26 +1,20 @@
 package fr.ct402.dbcfs
 
-import fr.ct402.dbcfs.commons.AbstractComponent
-import fr.ct402.dbcfs.commons.nextOrNull
-import fr.ct402.dbcfs.commons.parseDateTime
-import fr.ct402.dbcfs.discord.DiscordInterface
+import fr.ct402.dbcfs.commons.*
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
 import fr.ct402.dbcfs.manager.DiscordAuthManager
 import fr.ct402.dbcfs.manager.ProcessManager
 import fr.ct402.dbcfs.manager.ProfileManager
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 
-class Command(val help: String, val run: CommandParser.(MessageReceivedEvent, List<String>) -> Unit, val depthLevel: Int = 1) {
-    operator fun invoke(receiver: CommandParser, event: MessageReceivedEvent, args: List<String>) = receiver.run(event, args)
+class Command(val help: String, val run: CommandParser.(Notifier, List<String>) -> Unit, val depthLevel: Int = 1) {
+    operator fun invoke(receiver: CommandParser, notifier: Notifier, args: List<String>) = receiver.run(notifier, args)
 }
 
 const val commandPrefix = "."
@@ -56,82 +50,65 @@ class CommandParser (
         val discordAuthManager: DiscordAuthManager
 ): AbstractComponent() {
 
-    fun runRemoveProfileCommand(event: MessageReceivedEvent, args: List<String>) {
-        val name = args.firstOrNull() ?: return missingArgument(event)
+    fun runRemoveProfileCommand(notifier: Notifier, args: List<String>) =
+            profileManager.removeProfile(args.firstOrNull() ?: throw MissingArgumentException("remove", "name"), notifier)
 
-        profileManager.removeProfile(name, Notifier(event))
+    fun runAuthorizeCommand(notifier: Notifier, args: List<String>) =
+            discordAuthManager.addAuthorized(notifier.event.message, notifier)
+
+    fun runUnauthorizeCommand(notifier: Notifier, args: List<String>) =
+            discordAuthManager.removeAuthorized(notifier.event.message, notifier)
+
+    fun runStartCommand(notifier: Notifier, args: List<String>) = notifier.launchAsCoroutine {
+        processManager.start(profileManager.currentProfileOrThrow, notifier)
     }
 
-    fun runAuthorizeCommand(event: MessageReceivedEvent, args: List<String>) {
-        discordAuthManager.addAuthorized(event.message, Notifier(event))
+    fun runSwapCommand(notifier: Notifier, args: List<String>) {
+        val name = args.firstOrNull() ?: throw MissingArgumentException("swap", "name")
+
+        profileManager.swapProfile(name)
+        notifier.success("Current profile is now $name")
     }
 
-    fun runUnauthorizeCommand(event: MessageReceivedEvent, args: List<String>) {
-        discordAuthManager.removeAuthorized(event.message, Notifier(event))
-    }
-
-    fun runStartCommand(event: MessageReceivedEvent, args: List<String>) {
-        val profile = profileManager.currentProfile ?: return noCurrentProfile(event)
-
-        GlobalScope.launch {
-            val msg = event.channel.sendMessage("Starting server...").complete()
-            processManager.start(profile, Notifier(msg))
-        }
-    }
-
-    fun runSwapCommand(event: MessageReceivedEvent, args: List<String>) {
-        val name = args.firstOrNull() ?: return missingArgument(event)
-
-        if (profileManager.swapProfile(name))
-            Notifier(event).success("Current profile is now $name")
-        else
-            Notifier(event).error("Error: Profile $name does not exist")
-    }
-
-    fun runStopCommand(event: MessageReceivedEvent, args: List<String>) {
+    fun runStopCommand(notifier: Notifier, args: List<String>) {
         if (processManager.stop())
-            Notifier(event).success("Server stopped")
+            notifier.success("Server stopped")
         else
-            Notifier(event).error("Error: No process is currently running")
+            notifier.error("Error: No process is currently running")
     }
 
-    fun runBuildCommand(event: MessageReceivedEvent, args: List<String>) {
-        val profile = profileManager.currentProfile ?: return noCurrentProfile(event)
+    fun runBuildCommand(notifier: Notifier, args: List<String>) {
+        val profile = profileManager.currentProfileOrThrow
 
-        GlobalScope.launch {
-            val notifier = Notifier(event).apply { update("Starting build...", force = true) }
+        notifier.launchAsCoroutine {
+            notifier.update("Starting build...", force = true)
             profileManager.downloadGame(notifier) && processManager.genMap(profile, notifier)
         }
     }
 
-    fun runCreateProfileCommand(event: MessageReceivedEvent, args: List<String>) {
-        val name = args.firstOrNull() ?: return missingArgument(event)
+    fun runCreateProfileCommand(notifier: Notifier, args: List<String>) {
+        val name = args.firstOrNull() ?: throw MissingArgumentException("create profile", "name")
         val targetVersion = args.getOrNull(1)
         val experimental = args.getOrNull(2) == "experimental"
 
-        if (profileManager.createProfile(name, targetVersion, experimental))
-            Notifier(event).success("Profile $name created successfully")
-        else
-            Notifier(event).error("Error, could not create profile with given name")
+        profileManager.createProfile(name, targetVersion, experimental, notifier)
     }
 
-    fun runSyncCommand(event: MessageReceivedEvent, args: List<String>) {
-        GlobalScope.launch {
-            val gameSyncMessage = event.channel.sendMessage("Starting game versions sync...").complete()
-            downloadApiService.syncGameVersions(Notifier(gameSyncMessage))
+    fun runSyncCommand(notifier: Notifier, args: List<String>) {
+        notifier.launchAsCoroutine {
+            downloadApiService.syncGameVersions(notifier)
         }
-        GlobalScope.launch {
-            val modsSyncMessage = event.channel.sendMessage("Starting mods versions sync...").complete()
-            modPortalApiService.syncModList(Notifier(modsSyncMessage))
+        notifier.launchAsCoroutine {
+            modPortalApiService.syncModList(notifier)
         }
     }
 
-    fun runEditCommand(event: MessageReceivedEvent, args: List<String>) {
-        profileManager.currentProfile ?: return noCurrentProfile(event)
-        profileManager.generateAuthToken(Notifier(event))
+    fun runEditCommand(notifier: Notifier, args: List<String>) {
+        profileManager.currentProfileOrThrow
+        profileManager.generateAuthToken(notifier)
     }
 
-    fun runTestCommand(event: MessageReceivedEvent, args: List<String>) {
+    fun runTestCommand(notifier: Notifier, args: List<String>) {
         val dateStr = args.firstOrNull()
         if (dateStr != null) {
             val date = LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME)
@@ -139,28 +116,19 @@ class CommandParser (
         }
     }
 
-    fun runHelpCommand(event: MessageReceivedEvent, args: List<String>) {
+    fun runHelpCommand(notifier: Notifier, args: List<String>) {
         val msg = if (args.isEmpty()) {
             "Usage: help <command>"
         } else {
             getCommand(args.iterator())?.help ?: "Comand ${args.reduce { acc, s -> "$acc $s" }} not found"
         }
-        event.channel.sendMessage(msg).queue()
+        notifier.success(msg)
     }
 
     //FIXME Should be part of Notifier class
     companion object {
-        fun notImplemented(event: MessageReceivedEvent) =
-                Notifier(event).error("Feature not implemented yet : ${event.message.contentDisplay}")
-
-        fun missingArgument(event: MessageReceivedEvent) =
-                Notifier(event).error("Missing argument for command : ${event.message.contentDisplay}")
-
-        fun noCurrentProfile(event: MessageReceivedEvent) =
-                Notifier(event).error("No profile is currently selected, please select or create a profile first (See create profile or swap)")
-
-        fun parseError(event: MessageReceivedEvent) =
-                Notifier(event).error("Could not parse your command : ${event.message.contentDisplay}")
+        fun notImplemented(notifier: Notifier) =
+                notifier.error("Feature not implemented yet : ${notifier.event.message.contentDisplay}")
 
         fun removePrefix(str: String) =
                 if (str.startsWith(commandPrefix)) str.drop(commandPrefix.length) else null
@@ -170,8 +138,19 @@ class CommandParser (
         val content = event.message.contentRaw.trimStart()
         val str = removePrefix(content) ?: if (event.isFromType(ChannelType.PRIVATE)) content else return
         val tokens = str.trimStart().split(' ').filter { it.isNotEmpty() }
-        val cmd = getCommand(tokens.iterator()) ?: return parseError(event)
+        val notifier = Notifier(event)
+        val cmd = getCommand(tokens.iterator()) ?: return notifier.parseError()
 
-        cmd(this, event, tokens.drop(cmd.depthLevel))
+        try {
+            cmd(this, notifier, tokens.drop(cmd.depthLevel))
+        } catch (e: Exception) {
+            e.multicatch(
+                    NoCurrentProfileException::class,
+                    ProfileNotFoundException::class,
+                    MissingArgumentException::class,
+            ) {
+                notifier print e
+            }
+        }
     }
 }
