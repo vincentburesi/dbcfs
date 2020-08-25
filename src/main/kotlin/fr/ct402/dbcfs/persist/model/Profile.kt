@@ -1,7 +1,10 @@
 package fr.ct402.dbcfs.persist.model
 
+import fr.ct402.dbcfs.commons.parseDateTime
+import fr.ct402.dbcfs.commons.printDateTime
 import me.liuwj.ktorm.entity.Entity
 import me.liuwj.ktorm.schema.*
+import java.time.LocalDateTime
 
 interface Profile : Entity<Profile> {
     companion object : Entity.Factory<Profile>()
@@ -15,7 +18,20 @@ interface Profile : Entity<Profile> {
     var serverSettings: String?
     var serverWhitelist: String?
     var gameVersion: GameVersion
+    var token: String?
+    var tokenExpirationDateString: String?
 
+    var tokenExpiration: LocalDateTime?
+            get() {
+                return parseDateTime(tokenExpirationDateString ?: return null)
+            }
+            set(dateTime) {
+                tokenExpirationDateString =
+                        if (dateTime == null)
+                            null
+                        else
+                            printDateTime(dateTime)
+            }
     val localPath: String
             get() = "/mnt/profiles/$name"
 }
@@ -30,6 +46,8 @@ object Profiles : Table<Profile>("t_profile") {
     val serverSettings = varchar("server_settings").bindTo { it.serverSettings }
     val serverWhitelist = varchar("server_whitelist").bindTo { it.serverWhitelist }
     val gameVersion = int("game_version_id").references(GameVersions) { it.gameVersion }
+    val token = varchar("token").bindTo { it.token }
+    val tokenExpirationDateString = varchar("token_expiration_date_string").bindTo { it.tokenExpirationDateString }
 }
 
 val profileSchema = """
@@ -41,6 +59,8 @@ val profileSchema = """
         map_gen_settings TEXT,
         server_settings TEXT,
         server_whitelist TEXT,
-        game_version_id INTEGER NOT NULL
+        game_version_id INTEGER NOT NULL,
+        token TEXT,
+        token_expiration_date_string TEXT
     )
 """.trimIndent()

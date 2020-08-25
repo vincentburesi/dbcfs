@@ -1,10 +1,7 @@
 package fr.ct402.dbcfs.manager
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import fr.ct402.dbcfs.commons.AbstractComponent
-import fr.ct402.dbcfs.commons.baseDataDir
-import fr.ct402.dbcfs.commons.catch
-import fr.ct402.dbcfs.commons.compareVersionStrings
+import fr.ct402.dbcfs.commons.*
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.config.ServerSettings
@@ -19,6 +16,8 @@ import net.dv8tion.jda.api.entities.Message
 import org.springframework.stereotype.Component
 import java.io.File
 import java.lang.Exception
+import java.security.SecureRandom
+import java.time.LocalDateTime
 
 @Component
 class ProfileManager (
@@ -30,9 +29,17 @@ class ProfileManager (
         private set
     private val profileSequence = dbLoader.database.sequenceOf(Profiles)
     private val gameVersionSequence = dbLoader.database.sequenceOf(GameVersions)
+    private val secureRandom = SecureRandom()
 
     private fun swapProfile(profile: Profile?) {
         currentProfile = profile
+    }
+
+    fun getProfileByName(name: String): Profile? {
+        return if (currentProfile?.name == name)
+            currentProfile
+        else
+            profileSequence.find { it.name eq name }
     }
 
     /**
@@ -165,5 +172,26 @@ class ProfileManager (
         }
         logger.info("Success!")
         return true
+    }
+
+    fun generateAuthToken(notifier: Notifier) {
+        logger.info("allowed chars $tokenAllowedChars")
+        val now = LocalDateTime.now()
+        val profile = currentProfile
+        if (profile == null) {
+            notifier.error("No profile is currently selected, please select or create a profile first (See create profile or swap)") //FIXME
+            return
+        }
+
+        profile.apply {
+            if (token == null || tokenExpiration?.isAfter(now) != true)
+                token = (1..tokenLength).map {
+                    secureRandom.nextInt(tokenAllowedChars.length)
+                }.map(tokenAllowedChars::get).joinToString("")
+            tokenExpiration = now.plusMinutes(tokenValidityInMinutes)
+        }.flushChanges()
+
+        notifier.success("You can edit your profile here : http://localhost:8080/edit/${profile.name}/${profile.token}\n" +
+                "The link will be valid for the next $tokenValidityInMinutes minutes")
     }
 }

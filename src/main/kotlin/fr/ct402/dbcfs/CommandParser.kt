@@ -2,6 +2,7 @@ package fr.ct402.dbcfs
 
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.nextOrNull
+import fr.ct402.dbcfs.commons.parseDateTime
 import fr.ct402.dbcfs.discord.DiscordInterface
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
@@ -14,6 +15,8 @@ import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 class Command(val help: String, val run: CommandParser.(MessageReceivedEvent, List<String>) -> Unit, val depthLevel: Int = 1) {
@@ -40,6 +43,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "swap" -> Command("Set given profile as current one", CommandParser::runSwapCommand)
     "sync" -> Command("Synchronize the game version and mod list", CommandParser::runSyncCommand)
     "test" -> Command("Used for testing features in dev", CommandParser::runTestCommand)
+    "edit" -> Command("Generate edit link to setup server via URL", CommandParser::runEditCommand)
     else -> null
 }
 
@@ -122,16 +126,17 @@ class CommandParser (
         }
     }
 
+    fun runEditCommand(event: MessageReceivedEvent, args: List<String>) {
+        profileManager.currentProfile ?: return noCurrentProfile(event)
+        profileManager.generateAuthToken(Notifier(event))
+    }
+
     fun runTestCommand(event: MessageReceivedEvent, args: List<String>) {
-        args.forEach {
-            logger.info(it)
+        val dateStr = args.firstOrNull()
+        if (dateStr != null) {
+            val date = LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME)
+            logger.info("Successfully parsed $date")
         }
-        logger.warn(event.author.id)
-//        val argsConcat = args.run { if (isEmpty()) "" else reduce { acc, s -> "$acc $s" } }
-//        val msg = "Le parsing des commandes fonctionne :\n$argsConcat"
-//        val sent = event.channel.sendMessage(msg).complete()
-//        sent?.editMessage(sent.contentRaw + "\n Et je peux edit mes propres messages !")
-//                ?.queueAfter(5L, TimeUnit.SECONDS)
     }
 
     fun runHelpCommand(event: MessageReceivedEvent, args: List<String>) {
@@ -143,20 +148,23 @@ class CommandParser (
         event.channel.sendMessage(msg).queue()
     }
 
-    fun notImplemented(event: MessageReceivedEvent) =
-            Notifier(event).error("Feature not implemented yet : ${event.message.contentDisplay}")
+    //FIXME Should be part of Notifier class
+    companion object {
+        fun notImplemented(event: MessageReceivedEvent) =
+                Notifier(event).error("Feature not implemented yet : ${event.message.contentDisplay}")
 
-    fun missingArgument(event: MessageReceivedEvent) =
-            Notifier(event).error("Missing argument for command : ${event.message.contentDisplay}")
+        fun missingArgument(event: MessageReceivedEvent) =
+                Notifier(event).error("Missing argument for command : ${event.message.contentDisplay}")
 
-    fun noCurrentProfile(event: MessageReceivedEvent) =
-            Notifier(event).error("No profile is currently selected, please select or create a profile first (See create profile or swap)")
+        fun noCurrentProfile(event: MessageReceivedEvent) =
+                Notifier(event).error("No profile is currently selected, please select or create a profile first (See create profile or swap)")
 
-    fun parseError(event: MessageReceivedEvent) =
-            Notifier(event).error("Could not parse your command : ${event.message.contentDisplay}")
+        fun parseError(event: MessageReceivedEvent) =
+                Notifier(event).error("Could not parse your command : ${event.message.contentDisplay}")
 
-    fun removePrefix(str: String) =
-            if (str.startsWith(commandPrefix)) str.drop(commandPrefix.length) else null
+        fun removePrefix(str: String) =
+                if (str.startsWith(commandPrefix)) str.drop(commandPrefix.length) else null
+    }
 
     fun parseCommand(event: MessageReceivedEvent) {
         val content = event.message.contentRaw.trimStart()

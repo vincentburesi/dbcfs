@@ -82,7 +82,7 @@ class ModPortalApiService(
             modList.forEachIndexed { index, mod ->
                 val existing = existingMods.find { it.name == mod.name }
                 buildDbEntry(mod, existing)?.updateOrAdd(existing == null)
-                if (index % 200 == 0)
+                if (index % 20 == 0)
                     notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)..." +
                             " ${ (index * 100) / modList.size }%")
             }

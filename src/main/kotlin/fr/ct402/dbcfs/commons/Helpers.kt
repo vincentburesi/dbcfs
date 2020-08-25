@@ -1,6 +1,9 @@
 package fr.ct402.dbcfs.commons
 
 import org.slf4j.LoggerFactory
+import java.security.SecureRandom
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.math.min
 
 fun compareVersionStrings(s1: String, s2: String): Int {
@@ -24,7 +27,6 @@ const val orderAfterDbLoad = 2
 fun Any.getLogger() = LoggerFactory.getLogger(this.javaClass.simpleName.takeWhile { it != '$' })!!
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
-//TODO Improve on debug logs
 const val debugMode = true
 inline infix fun <T> (() -> T).catch(c: () -> T) =
         try {
@@ -35,13 +37,13 @@ inline infix fun <T> (() -> T).catch(c: () -> T) =
             c()
         }
 
-// Allows you to write
-//val test = { 5 / 0 } catch { 42 }
-// test == 42 and exception details have been logged
+fun parseDateTime(str: String): LocalDateTime =
+        LocalDateTime.parse(str, DateTimeFormatter.ISO_DATE_TIME)
+fun printDateTime(dateTime: LocalDateTime): String =
+        dateTime.format(DateTimeFormatter.ISO_DATE_TIME)
 
-// same code without helper
-//val test2 = try { 5 / 0 } catch (e: Exception) {
-//    e.getLogger().error(e.message)
-//    if (debugMode) e.printStackTrace()
-//    42
-//}
+const val tokenValidityInMinutes = 60L
+const val tokenLength = 64
+val tokenAllowedChars = ('A'..'Z').joinToString("") + ('a'..'z').joinToString("") + ('0'..'9').joinToString("")
+
+

@@ -2,13 +2,14 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Testing JSON Edit</title>
-    <script type="text/javascript" src="./jsoneditor.js"></script>
+    <title>{{profile.name}} - Server settings</title>
+    <script type="text/javascript" src="/jsoneditor.js"></script>
     <link rel='stylesheet' href='https://cdn.jsdelivr.net/foundation/5.0.2/css/foundation.min.css'>
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.0.3/css/font-awesome.css'>
 </head>
 <body>
-<h1>Editing {{profileName}} settings</h1>
+{{>edit-summary}}
+<h1>Editing {{profile.name}} server settings</h1>
 <div class="row">
     <div id='editor_holder' class='medium-12 columns'></div>
 </div>
@@ -17,7 +18,7 @@
     JSONEditor.defaults.theme = 'foundation5';
     JSONEditor.defaults.iconlib = 'fontawesome4';
     // Initialize the editor with a JSON schema
-    var editor = new JSONEditor(document.getElementById('editor_holder'),{
+    let editor = new JSONEditor(document.getElementById('editor_holder'),{
         schema: {
             type: "object",
             title: "Server settings",
@@ -26,7 +27,7 @@
                     type: "string",
                     required: true,
                     description: "Name of the game as it will appear in the game listing",
-                    default: "{{profileName}}"
+                    default: "{{profile.name}}"
                 },
                 description: {
                     type: "string",

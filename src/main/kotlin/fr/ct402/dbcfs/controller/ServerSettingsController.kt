@@ -1,4 +1,4 @@
-package fr.ct402.dbcfs
+package fr.ct402.dbcfs.controller
 
 import fr.ct402.dbcfs.factorio.config.ServerSettings
 import fr.ct402.dbcfs.manager.ProfileManager
@@ -17,13 +17,13 @@ class ServerSettingsController (
         val profileManager: ProfileManager
 ) {
 
-    @GetMapping("/{profile}/server-settings")
+    @GetMapping("/server-settings")
     fun serverSettings(model: Model): String {
         model["profileName"] = profileManager.currentProfile ?: return "no-profile-selected" //FIXME
-        return "server-settings"
+        return "edit-server-settings"
     }
 
-    @PostMapping("/{profile}/server-settings", consumes = ["application/json"], produces = ["application/json"])
+    @PostMapping("/{profileName}/server-settings", consumes = ["application/json"], produces = ["application/json"])
     fun setServerSettings(
             @RequestBody serverSettings: ServerSettings,
             @PathVariable profileName: String
