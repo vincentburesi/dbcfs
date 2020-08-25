@@ -19,7 +19,6 @@ class Command(val help: String, val run: CommandParser.(MessageReceivedEvent, Li
 }
 
 const val commandPrefix = "."
-const val noProfileSelectedMessage = "No profile is currently selected, please select or create a profile first (See create profile or swap)"
 
 fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "help" -> Command("This is the help command documentation, it should come into form later", CommandParser::runHelpCommand)
@@ -50,52 +49,53 @@ class CommandParser (
 
     fun runRemoveProfileCommand(event: MessageReceivedEvent, args: List<String>) {
         val name = args.firstOrNull() ?: return missingArgument(event)
+
         profileManager.removeProfile(name, Notifier(event))
     }
 
     fun runStartCommand(event: MessageReceivedEvent, args: List<String>) {
-        val profile = profileManager.currentProfile
-        if (profile == null) {
-            event.channel.sendMessage(noProfileSelectedMessage).queue()
-            return
-        } else
-            GlobalScope.launch {
-                val msg = event.channel.sendMessage("Starting server").complete()
-                processManager.start(profile, Notifier(msg))
-            }
+        val profile = profileManager.currentProfile ?: return noCurrentProfile(event)
+
+        GlobalScope.launch {
+            val msg = event.channel.sendMessage("Starting server").complete()
+            processManager.start(profile, Notifier(msg))
+        }
     }
 
     fun runSwapCommand(event: MessageReceivedEvent, args: List<String>) {
-        val name = args.firstOrNull()
-        val msg = if (name != null && profileManager.swapProfile(name))
-            "Current profile is now $name"
+        val name = args.firstOrNull() ?: return missingArgument(event)
+
+        if (profileManager.swapProfile(name))
+            Notifier(event).success("Current profile is now $name")
         else
-            "Error: Could not swap profile"
-        event.channel.sendMessage(msg).queue()
+            Notifier(event).error("Error: Profile $name does not exist")
     }
 
     fun runStopCommand(event: MessageReceivedEvent, args: List<String>) {
-        val result = processManager.stop()
-        val msg = if (result) "Server stopped" else "Error: No process is currently running"
-        event.channel.sendMessage(msg).queue()
+        if (processManager.stop())
+            Notifier(event).success("Server stopped")
+        else
+            Notifier(event).error("Error: No process is currently running")
     }
 
     fun runBuildCommand(event: MessageReceivedEvent, args: List<String>) {
-        val profile = profileManager.currentProfile
-        val msg = if (profile != null) {
-            val result = profileManager.downloadGame() && processManager.genMap(profile)
-            if (result) "Profile is ready, you can start the server." else "Error : Could not download the game. See logs for more informations"
-        } else "No profile is currently selected, please select or create a profile first (See create profile or swap)"
-        event.channel.sendMessage(msg).queue()
+        val profile = profileManager.currentProfile ?: return noCurrentProfile(event)
+
+        GlobalScope.launch {
+            val notifier = Notifier(event).apply { update("Starting build...", force = true) }
+            profileManager.downloadGame(notifier) && processManager.genMap(profile, notifier)
+        }
     }
 
     fun runCreateProfileCommand(event: MessageReceivedEvent, args: List<String>) {
         val name = args.firstOrNull() ?: return missingArgument(event)
         val targetVersion = args.getOrNull(1)
         val experimental = args.getOrNull(2) == "experimental"
-        val result = profileManager.createProfile(name, targetVersion, experimental)
-     val msg = if (result) "Profile $name created successfully" else "Error, could not create profile with given name"
-        event.channel.sendMessage(msg).queue()
+
+        if (profileManager.createProfile(name, targetVersion, experimental))
+            Notifier(event).success("Profile $name created successfully")
+        else
+            Notifier(event).error("Error, could not create profile with given name")
     }
 
     fun runSyncCommand(event: MessageReceivedEvent, args: List<String>) {
@@ -126,20 +126,17 @@ class CommandParser (
         event.channel.sendMessage(msg).queue()
     }
 
-    fun notImplemented(event: MessageReceivedEvent) {
-        val msg = "Feature not implemented yet : ${event.message.contentDisplay}"
-        event.channel.sendMessage(msg).queue()
-    }
+    fun notImplemented(event: MessageReceivedEvent) =
+            Notifier(event).error("Feature not implemented yet : ${event.message.contentDisplay}")
 
-    fun missingArgument(event: MessageReceivedEvent) {
-        val msg = "Missing argument for command : ${event.message.contentDisplay}"
-        event.channel.sendMessage(msg).queue()
-    }
+    fun missingArgument(event: MessageReceivedEvent) =
+            Notifier(event).error("Missing argument for command : ${event.message.contentDisplay}")
 
-    fun parseError(event: MessageReceivedEvent) {
-        val msg = "Could not parse your command : ${event.message.contentDisplay}"
-        event.channel.sendMessage(msg).queue()
-    }
+    fun noCurrentProfile(event: MessageReceivedEvent) =
+            Notifier(event).error("No profile is currently selected, please select or create a profile first (See create profile or swap)")
+
+    fun parseError(event: MessageReceivedEvent) =
+            Notifier(event).error("Could not parse your command : ${event.message.contentDisplay}")
 
     fun removePrefix(str: String) =
             if (str.startsWith(commandPrefix)) str.drop(commandPrefix.length) else null

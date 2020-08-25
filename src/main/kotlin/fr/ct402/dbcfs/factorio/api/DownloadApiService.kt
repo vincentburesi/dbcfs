@@ -112,7 +112,7 @@ class DownloadApiService(
             ?.filter { it.all { it.isLetter() } && it != "" }
             ?.reduce { acc, s -> "${acc}.${s}" }
 
-    private fun extractArchive(path: String, extension: String): Boolean {
+    private fun extractArchive(path: String, extension: String, notifier: Notifier): Boolean {
         val folder = File(path)
         val archive = File("$path.$extension")
 
@@ -124,21 +124,20 @@ class DownloadApiService(
             else -> return false
         }
         val p = Runtime.getRuntime().exec(cmd)
-
-        while (p.isAlive)
-            ; //FIXME active wait
-
+        p.waitFor()
         if (p.exitValue() != 0) {
+            notifier.error("Extraction failed, see logs for details")
             logger.error("Command Failed : $cmd")
             logger.error("\n" + p.inputStream.bufferedReader().use { it.readText() })
             logger.error("\n" + p.errorStream.bufferedReader().use { it.readText() })
             return false
-        }
+        } else
+            notifier.success("Extraction successful")
         archive.delete()
         return true
     }
 
-    fun downloadGameClient(webPath: String, localPath: String): Boolean {
+    fun downloadGameClient(webPath: String, localPath: String, notifier: Notifier): Boolean {
         val res = get("$factorioDownloadUrl$webPath",
                 cookies = mapOf(Pair("session", config.cookie)),
                 stream = true
@@ -153,7 +152,8 @@ class DownloadApiService(
 
         for (chunk in res.contentIterator(1024))
             archive.appendBytes(chunk)
+        notifier.update("Download complete, extracting files...")
 
-        return extractArchive(localPath, extension)
+        return extractArchive(localPath, extension, notifier)
     }
 }

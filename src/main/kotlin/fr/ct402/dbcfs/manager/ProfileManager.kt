@@ -104,27 +104,34 @@ class ProfileManager (
     /**
      * Attempt to download the latest game version for the current profile
      */
-    fun downloadGame(): Boolean {
-        return downloadGame(currentProfile?.gameVersion ?: return false)
+    fun downloadGame(notifier: Notifier): Boolean {
+        return downloadGame(currentProfile?.gameVersion ?: return false, notifier)
     }
 
-    private fun downloadGame(version: GameVersion): Boolean {
+    private fun downloadGame(version: GameVersion, notifier: Notifier): Boolean {
         if (version.platform != Platform.LINUX64
-                || version.buildType != BuildType.HEADLESS)
+                || version.buildType != BuildType.HEADLESS) {
+            notifier.error("Error game version does not match linux64-headless")
             return false
-        logger.info("Starting download procedure for ${version.versionNumber}")
+        }
 
-        if (version.localPath != null) return true
+
+        if (version.localPath != null) {
+            notifier.success("Game version already downloaded")
+            return true
+        } else
+            notifier.update("Starting download for ${version.versionNumber}...")
 
         val destination = File("$baseDataDir/bin/${version.versionNumber}")
         if (destination.exists())
-            return false
+            destination.deleteRecursively()
         destination.mkdirs()
 
-        if (!downloadApiService.downloadGameClient(version.path, destination.absolutePath))
-            return false
-        version.apply { localPath = destination.absolutePath }.flushChanges()
-        return true
+        return if (downloadApiService.downloadGameClient(version.path, destination.absolutePath, notifier)) {
+            version.apply { localPath = destination.absolutePath }.flushChanges()
+            true
+        } else
+            false
     }
 
     /**

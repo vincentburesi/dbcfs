@@ -52,8 +52,13 @@ class ProcessManager (
         }
     }
 
-    fun genMap(profile: Profile): Boolean {
-        val factorioPath = profile.gameVersion.localPath ?: throw IllegalStateException("Cannot start server, game has not been downloaded")
+    fun genMap(profile: Profile, notifier: Notifier): Boolean {
+        val factorioPath = profile.gameVersion.localPath
+        if (factorioPath == null) {
+            notifier.error("Cannot build map, game has not been downloaded")
+            return false
+        } else
+            notifier.update("Building map...")
 
         val p = Runtime.getRuntime().exec(arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
                 "--create", "${profile.localPath}/map.zip",
@@ -63,13 +68,16 @@ class ProcessManager (
 //                "--mod-directory", "/mnt/...", //TODO
 //                "--config", "config file",
         ))
-        val success = p.waitFor() == 0
-        if (!success) {
-            logger.error("Failed to build map, error log below :")
+
+        return if (p.waitFor() == 0) {
+            notifier.success("Map is ready, you can start the server")
+            true
+        } else {
+            notifier.error("Failed to build map, see logs for details")
             logger.warn(p.inputStream.bufferedReader().use { it.readText() })
             logger.error(p.errorStream.bufferedReader().use { it.readText() })
+            false
         }
-        return success
     }
 
     private fun Profile.findConfig(config: String): String {
