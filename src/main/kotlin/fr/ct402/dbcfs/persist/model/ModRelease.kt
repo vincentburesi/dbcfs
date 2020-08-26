@@ -18,7 +18,7 @@ interface ModRelease: Entity<ModRelease> {
     var mod: Mod
 }
 
-object ModReleases : Table<ModRelease>("t_mod") {
+object ModReleases : Table<ModRelease>("t_mod_release") {
     val id = int("rowid").primaryKey().bindTo { it.id }
     val downloadUrl = varchar("download_url").bindTo { it.downloadUrl }
     val fileName = varchar("file_name").bindTo { it.fileName }
@@ -30,9 +30,10 @@ object ModReleases : Table<ModRelease>("t_mod") {
 }
 
 val modReleaseSchema = """
-    CREATE TABLE IF NOT EXISTS t_mod (
+    CREATE TABLE IF NOT EXISTS t_mod_release (
         download_url TEXT NOT NULL UNIQUE,
         file_name TEXT NOT NULL UNIQUE,
+        info_json TEXT NOT NULL,
         released_at TEXT NOT NULL,
         version TEXT NOT NULL,
         sha1 TEXT NOT NULL,

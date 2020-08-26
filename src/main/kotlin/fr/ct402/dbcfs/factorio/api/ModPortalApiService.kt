@@ -4,12 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import fr.ct402.dbcfs.commons.AbstractComponent
+import fr.ct402.dbcfs.commons.FactorioApiErrorException
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.FactorioConfigProperties
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.Mod
+import fr.ct402.dbcfs.persist.model.ModRelease
+import fr.ct402.dbcfs.persist.model.ModReleases
 import fr.ct402.dbcfs.persist.model.Mods
 import khttp.get
+import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.*
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Service
@@ -23,27 +27,33 @@ class ModPortalApiService(
         val dbLoader: DbLoader
 ): AbstractComponent() {
     fun modSequence() = dbLoader.database.sequenceOf(Mods)
+    fun modReleaseSequence() = dbLoader.database.sequenceOf(ModReleases)
     val jsonMapper = jacksonObjectMapper()
     fun factorioModPortalUrl(page: Int, pageSize: Int = 25) = "http://mods.factorio.com/api/mods" +
             "?username=${config.username}&token=${config.token}&page_size=$pageSize${if (page > 1) "&page=$page" else ""}"
 
-    @JsonIgnoreProperties("links")
-    data class Pagination(val count: Int, val page: Int, val page_count: Int, val page_size: Int)
+    fun factorioModDetailUrl(modName: String) = "http://mods.factorio.com/api/mods/$modName/full"
 
-    data class Result(
-            val name: String, val title: String, val owner: String, val summary: String,
-            val downloads_count: Int, val category: String?, val score: Float, val latest_release: LatestRelease?
-    )
+    fun syncModList(notifier: Notifier): Boolean {
+        notifier.update("Starting mod versions sync...", force = true)
+        val modList = retrieveModList(notifier)?.sanitize() ?: return false
+        val existingMods = modSequence().toList()
+        notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)...")
+        updateDb(modList, existingMods, notifier)
+        notifier.success("Successfully synced mod versions")
+        return true
+    }
 
-    data class LatestRelease(
-            val download_url: String, val file_name: String, val info_json: InfoJson, val released_at: String,
-            val version: String, val sha1: String
-    )
+    fun syncModReleaseList(notifier: Notifier, mod: Mod) {
+        val releases = retrieveModReleaseList(mod)
+        val existings = modReleaseSequence().filter { it.mod eq mod.id }.toList()
 
-    data class InfoJson(val factorio_version: String)
-    data class ModList(val pagination: Pagination, val results: List<Result>)
+        updateModReleasesDb(mod, releases, existings, notifier)
+        notifier.success("Successfully updated mod release list")
+    }
 
-    fun retrieveModList(notifier: Notifier): MutableList<Result>? {
+    //region syncModList internals
+    private fun retrieveModList(notifier: Notifier): MutableList<Result>? {
         val pageSize = 200
         try {
             var i = 0
@@ -62,22 +72,12 @@ class ModPortalApiService(
             }
             return acc
         } catch (e: Exception) {
-            notifier.error("An error occured during mod retrieval")
-            return null
+            logger.error("Error during modList retrieval : ${e.message}")
+            throw FactorioApiErrorException()
         }
     }
 
     private fun List<Result>.sanitize(): List<Result> = this.filter { it.latest_release != null }
-
-    fun syncModList(notifier: Notifier): Boolean {
-        notifier.update("Starting mod versions sync...", force = true)
-        val modList = retrieveModList(notifier)?.sanitize() ?: return false
-        val existingMods = modSequence().toList()
-        notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)...")
-        updateDb(modList, existingMods, notifier)
-        notifier.success("Successfully synced mod versions")
-        return true
-    }
 
     private fun updateDb(modList: List<Result>, existingMods: List<Mod>, notifier: Notifier) =
             modList.forEachIndexed { index, mod ->
@@ -87,7 +87,6 @@ class ModPortalApiService(
                     notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)..." +
                             " ${ (index * 100) / modList.size }%")
             }
-
 
     // Only updates the DB when the mod has changed in a significant way
     private fun Result.hasSignificantChange(old: Mod?) = (old == null
@@ -120,5 +119,51 @@ class ModPortalApiService(
 
     private fun Mod.updateOrAdd(add: Boolean) =
             if (add) modSequence().add(this) else this.flushChanges()
+    //endregion
+
+    //region syncModReleaseList internals
+    private fun retrieveModReleaseList(mod: Mod): List<ModDetailRelease> {
+        val res = get(factorioModDetailUrl(mod.name))
+        if (res.statusCode != 200) {
+            logger.error("Error: Mod Detail API returned error status code for : ${factorioModDetailUrl(mod.name)}")
+            throw FactorioApiErrorException()
+        }
+        return jsonMapper.readValue<ModDetail>(res.text).releases
+    }
+
+    private fun updateModReleasesDb(mod: Mod, releases: List<ModDetailRelease>, existingReleases: List<ModRelease>, notifier: Notifier) =
+            releases.forEachIndexed { index, release ->
+                notifier.update("Adding modRelease $index of ${releases.size}...")
+                val existing = existingReleases.find { it.downloadUrl == release.download_url }
+                buildDbEntry(mod, release, existing)?.updateOrAdd(existing == null)
+            }
+
+    private fun buildDbEntry(mod: Mod, release: ModDetailRelease, existing: ModRelease? = null): ModRelease? {
+        return (existing ?: ModRelease()).apply {
+            if (release.differs(this)) {
+                downloadUrl = release.download_url
+                fileName = release.file_name
+                infoJson = release.info_json.toString()
+                releasedAt = release.released_at
+                version = release.version
+                sha1 = release.sha1
+                this.mod = mod
+            } else {
+                logger.debug("Mod ${release.version} unchanged, skipped.")
+                return null
+            }
+        }
+    }
+
+    private fun ModDetailRelease.differs(old: ModRelease?) = (old == null
+            || old.fileName != file_name
+            || old.infoJson != info_json.toString()
+            || old.releasedAt != released_at
+            || old.version != version
+            || old.sha1 != sha1)
+
+    private fun ModRelease.updateOrAdd(add: Boolean) =
+            if (add) modReleaseSequence().add(this) else this.flushChanges()
+    //endregion
 }
 

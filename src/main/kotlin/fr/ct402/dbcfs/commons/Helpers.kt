@@ -70,4 +70,5 @@ class NoCurrentProfileException: RuntimeException("No profile is currently selec
 class ProfileNotFoundException(name: String): RuntimeException("No profile found matching this name: $name")
 class MissingArgumentException(cmd: String, argName: String): RuntimeException("$cmd: Missing $argName argument")
 class MatchingVersionNotFound(version: String): RuntimeException("Could not find matching version for $version. Try to sync the server or check factorio version list")
-
+class FactorioApiErrorException(): RuntimeException("An error occured during the Factorio API calls")
+class ModNotFoundException(name: String): RuntimeException("No mod found matching this name: $name. Try to sync the server or check factorio mod portal")

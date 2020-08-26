@@ -5,6 +5,7 @@ import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
 import fr.ct402.dbcfs.manager.DiscordAuthManager
+import fr.ct402.dbcfs.manager.ModManager
 import fr.ct402.dbcfs.manager.ProcessManager
 import fr.ct402.dbcfs.manager.ProfileManager
 import net.dv8tion.jda.api.entities.ChannelType
@@ -35,7 +36,11 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "stop" -> Command("Stops the running process, if any", CommandParser::runStopCommand)
     "build" -> Command("Builds current profile", CommandParser::runBuildCommand)
     "swap" -> Command("Set given profile as current one", CommandParser::runSwapCommand)
-    "sync" -> Command("Synchronize the game version and mod list", CommandParser::runSyncCommand)
+    "sync" -> when (it.nextOrNull()) {
+        "mod" -> Command("Synchronize the given mod releases", CommandParser::runSyncModCommand, 2)
+        null -> Command("Synchronize the game version and mod list", CommandParser::runSyncCommand)
+        else -> null
+    }
     "test" -> Command("Used for testing features in dev", CommandParser::runTestCommand)
     "edit" -> Command("Generate edit link to setup server via URL", CommandParser::runEditCommand)
     else -> null
@@ -47,7 +52,8 @@ class CommandParser (
         val processManager: ProcessManager,
         val downloadApiService: DownloadApiService,
         val modPortalApiService: ModPortalApiService,
-        val discordAuthManager: DiscordAuthManager
+        val discordAuthManager: DiscordAuthManager,
+        val modManager: ModManager,
 ): AbstractComponent() {
 
     fun runRemoveProfileCommand(notifier: Notifier, args: List<String>) =
@@ -92,6 +98,15 @@ class CommandParser (
         val experimental = args.getOrNull(2) == "experimental"
 
         profileManager.createProfile(name, targetVersion, experimental, notifier)
+    }
+
+    fun runSyncModCommand(notifier: Notifier, args: List<String>) {
+        notifier.launchAsCoroutine {
+            val name = args.firstOrNull() ?: throw MissingArgumentException("sync mod", "name")
+            val mod = modManager.getModByNameOrThrow(name)
+
+            modPortalApiService.syncModReleaseList(notifier, mod)
+        }
     }
 
     fun runSyncCommand(notifier: Notifier, args: List<String>) {
