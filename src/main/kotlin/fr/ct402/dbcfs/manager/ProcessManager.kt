@@ -20,17 +20,15 @@ class ProcessManager (
     private var currentProcess: Process? = null
     final var currentProcessProfileName: String? = null; private set
 
-    suspend fun start(profile: Profile, notifier: Notifier) {
+    suspend fun start(profile: Profile, notifier: Notifier, save: String? = null) {
         notifier.update("Starting server...", force = true)
         val factorioPath = profile.gameVersion.localPath ?: throw IllegalStateException("Cannot start server, game has not been downloaded")
+        val saveName = save ?: "map.zip"
         val cmd = arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
-                "--start-server", "${profile.localPath}/map.zip",
+                "--start-server", "${profile.localPath}/$saveName",
                 "--server-settings", profile.findConfig("server-settings"),
-                "--console-log", "${profile.localPath}/test-logfile-run" //TODO
-//                "--mod-directory", "/mnt/...", //TODO
-//                "--map-gen-settings", "map.zip",
-//                "--map-settings", "map.zip",
-//                "--config", "config file",
+                "--console-log", "${profile.localPath}/server-logs", //TODO
+                "--mod-directory", "${profile.localPath}/mods",
         ).let {
             it.plus(arrayOf("--server-whitelist", profile.serverWhitelist ?: return@let it))
         }
@@ -55,6 +53,12 @@ class ProcessManager (
 
     fun genMap(profile: Profile, notifier: Notifier): Boolean {
         val factorioPath = profile.gameVersion.localPath
+        val mapPath = "${profile.localPath}/map.zip"
+        if (File(mapPath).exists()) {
+            notifier.success("Map already exists, skipped. To rebuild the map, use remove file first")
+            return true
+        }
+
         if (factorioPath == null) {
             notifier.error("Cannot build map, game has not been downloaded")
             return false
@@ -62,20 +66,20 @@ class ProcessManager (
             notifier.update("Building map...")
 
         val p = Runtime.getRuntime().exec(arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
-                "--create", "${profile.localPath}/map.zip",
+                "--create", mapPath,
                 "--map-gen-settings", profile.findConfig("map-gen-settings"),
                 "--map-settings", profile.findConfig("map-settings"),
-                "--console-log", "/mnt/test-logfile-genmap" // TODO
-//                "--mod-directory", "/mnt/...", //TODO
-//                "--config", "config file",
+                "--console-log", "${profile.localPath}/map-generation-logs",
+                "--mod-directory", "${profile.localPath}/mods",
         ))
 
         return if (p.waitFor() == 0) {
             notifier.success("Map is ready, you can start the server")
             true
         } else {
-            notifier.error("Failed to build map, see logs for details")
-            logger.warn(p.inputStream.bufferedReader().use { it.readText() })
+            val output = p.inputStream.bufferedReader().use { it.readText() }
+            notifier.error("Failed to build map, see logs for details\n```\n...${output.takeLast(1500)}\n```\n");
+            logger.warn(output)
             logger.error(p.errorStream.bufferedReader().use { it.readText() })
             false
         }

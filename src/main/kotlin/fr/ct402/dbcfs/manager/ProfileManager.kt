@@ -3,6 +3,7 @@ package fr.ct402.dbcfs.manager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import fr.ct402.dbcfs.commons.*
 import fr.ct402.dbcfs.discord.Notifier
+import fr.ct402.dbcfs.discord.printProfileFiles
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.config.MapGenSettings
 import fr.ct402.dbcfs.factorio.config.MapSettings
@@ -81,7 +82,7 @@ class ProfileManager (
             this.allowExperimental = allowExperimental
             this.gameVersion = getMatchingVersion(target) ?: throw MatchingVersionNotFound(target)
         }
-        File(profile.localPath).apply { if (!exists()) mkdirs() }
+        File(profile.localPath + "/mods").apply { if (!exists()) mkdirs() }
         profileSequence().add(profile)
         swapProfile(profile)
         notifier.success("Profile $name successfully created with version ${profile.gameVersion.versionNumber}")
@@ -90,16 +91,12 @@ class ProfileManager (
     /**
      * Attempts to remove a profile with given name
      */
-    fun removeProfile(name: String, notifier: Notifier) {
-        if (processManager.currentProcessProfileName == name) processManager.stop()
-        if (currentProfile?.name == name) swapProfile(null)
-        val profile = profileSequence().find { it.name eq name }
-        if (profile != null) {
-            profileSequence().removeIf { it.name eq name }
-            File(profile.localPath).apply { if (exists()) deleteRecursively() }
-            notifier.success("Profile $name successfully removed")
-        } else
-            notifier.error("Error, could not find profile with given name")
+    fun removeProfile(profile: Profile, notifier: Notifier) {
+        if (currentProfile?.name == profile.name) swapProfile(null)
+        if (processManager.currentProcessProfileName == profile.name) processManager.stop()
+        profileSequence().removeIf { it.id eq profile.id }
+        File(profile.localPath).apply { if (exists()) deleteRecursively() }
+        notifier.success("Profile ${profile.name} successfully removed")
     }
 
     private fun getMatchingVersion(approxVersion: String,
@@ -140,8 +137,6 @@ class ProfileManager (
             notifier.update("Starting download for ${version.versionNumber}...")
 
         val destination = File("$baseDataDir/bin/${version.versionNumber}")
-        if (destination.exists())
-            destination.deleteRecursively()
         destination.mkdirs()
 
         return if (downloadApiService.downloadGameClient(version.path, destination.absolutePath, notifier)) {
@@ -216,4 +211,24 @@ class ProfileManager (
         notifier.success("You can edit your profile here : http://localhost:8080/edit/${profile.name}/${profile.token}\n" +
                 "The link will be valid for the next $tokenValidityInMinutes minutes")
     }
+
+    fun listFiles(customFilter: (File) -> Boolean = { true }): List<String> {
+        val profile = currentProfileOrThrow
+        return File(profile.localPath).walk().maxDepth(1).toList()
+                .filter { it.isFile && it.name != "mod-list.json" }
+                .filter(customFilter)
+                .map { it.name }
+    }
+
+    fun removeFile(notifier: Notifier, fileName: String) {
+        val profile = currentProfileOrThrow
+        val file = File(profile.localPath + "/$fileName")
+        if (file.exists()) {
+            file.delete()
+            notifier.success("Successfully removed file $fileName")
+        } else {
+            notifier.error("Could not remove $fileName, file doesn't exist")
+        }
+    }
+
 }

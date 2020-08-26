@@ -1,10 +1,7 @@
 package fr.ct402.dbcfs
 
 import fr.ct402.dbcfs.commons.*
-import fr.ct402.dbcfs.discord.Notifier
-import fr.ct402.dbcfs.discord.printGameReleases
-import fr.ct402.dbcfs.discord.printModReleases
-import fr.ct402.dbcfs.discord.printProfiles
+import fr.ct402.dbcfs.discord.*
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
 import fr.ct402.dbcfs.manager.DiscordAuthManager
@@ -32,6 +29,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "remove" -> when (it.nextOrNull()) {
         "profile" -> Command("See remove-profile, remove-user, remove-file", CommandParser::runRemoveProfileCommand, 2)
         "mod" -> Command("Remove mod from current profile", CommandParser::runRemoveModCommand, 2)
+        "file" -> Command("Delete file from current profile", CommandParser::runRemoveFileCommand, 2)
         else -> null
     }
     "add" -> when (it.nextOrNull()) {
@@ -42,7 +40,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "list" -> when (it.nextOrNull()) {
         "profiles" -> Command("List profiles", CommandParser::runListProfilesCommand, 2)
         "mods" -> Command("List profiles", CommandParser::runListModsCommand, 2)
-//        "files" -> Command("List profiles", CommandParser::runListFilesCommand, 2)
+        "files" -> Command("List profiles", CommandParser::runListFilesCommand, 2)
         "releases" -> when (it.nextOrNull()) {
             "game" -> Command("List profiles", CommandParser::runListGameReleasesCommand, 3)
             "mod" -> Command("List profiles", CommandParser::runListModReleasesCommand, 3)
@@ -80,10 +78,13 @@ class CommandParser(
         val profile = profileManager.currentProfileOrThrow
         notifier.update("Fetching data...", force = true)
         val nbMods = modManager.getModReleaseListByProfile(profile).size
+        val nbSaves = profileManager.listFiles { it.extension == "zip" }.size
         val msg = "Current profile is ${profile.name}\nVersion ${profile.gameVersion.versionNumber} " +
-                (if (profile.gameVersion.localPath != null) " installed\n" else "\n") +
-                (if (profile.allowExperimental) "*experimental updates are enabled*\n" else "\n") +
-                (if (nbMods != 0) "*$nbMods mod${ if (nbMods == 1) " is" else "s are" } currently installed*" else "")
+                (if (profile.gameVersion.localPath != null) " installed" else "") +
+                (if (profile.allowExperimental) "\n*experimental updates are enabled*" else "") +
+                (if (nbMods != 0) "\n*$nbMods mod${ if (nbMods == 1) " is" else "s are" } currently installed*" else "") +
+                (if (nbSaves != 0) "\n*$nbSaves save${ if (nbMods == 1) " is" else "s are" } currently present*" else "") //TODO ignore all zip package files
+
         notifier.print(msg)
     }
 
@@ -96,6 +97,9 @@ class CommandParser(
         notifier.printModReleases(modManager.getModReleaseListByProfile(profile))
     }
 
+    fun runListFilesCommand(notifier: Notifier, args: List<String>) =
+            notifier printProfileFiles profileManager.listFiles()
+
     fun runListGameReleasesCommand(notifier: Notifier, args: List<String>) =
             notifier printGameReleases profileManager.getAllGameReleases().groupBy { it.versionNumber }.map { it.value.first() }
 
@@ -105,9 +109,13 @@ class CommandParser(
         notifier.printModReleases(modManager.getModReleaseListByName(modName), all)
     }
 
-    fun runRemoveProfileCommand(notifier: Notifier, args: List<String>) =
-            profileManager.removeProfile(args.firstOrNull()
-                    ?: throw MissingArgumentException("remove", "name"), notifier)
+    fun runRemoveProfileCommand(notifier: Notifier, args: List<String>) {
+        val name = args.firstOrNull() ?: throw MissingArgumentException("remove", "name")
+        val profile = profileManager.getProfileByNameOrThrow(name)
+
+        modManager.removeAllModsFromProfile(profile, notifier)
+        profileManager.removeProfile(profile, notifier)
+    }
 
     fun runAuthorizeCommand(notifier: Notifier, args: List<String>) =
             discordAuthManager.addAuthorized(notifier.event.message, notifier)
@@ -116,7 +124,8 @@ class CommandParser(
             discordAuthManager.removeAuthorized(notifier.event.message, notifier)
 
     fun runStartCommand(notifier: Notifier, args: List<String>) = notifier.launchAsCoroutine {
-        processManager.start(profileManager.currentProfileOrThrow, notifier)
+        val save = args.firstOrNull()
+        processManager.start(profileManager.currentProfileOrThrow, notifier, save)
     }
 
     fun runSwapCommand(notifier: Notifier, args: List<String>) {
@@ -138,7 +147,7 @@ class CommandParser(
 
         notifier.launchAsCoroutine {
             notifier.update("Starting build...", force = true)
-            profileManager.downloadGame(notifier) && processManager.genMap(profile, notifier)
+            profileManager.downloadGame(notifier) && modManager.downloadMods(profile, notifier) && processManager.genMap(profile, notifier)
         }
     }
 
@@ -154,6 +163,11 @@ class CommandParser(
         val modName = args.firstOrNull() ?: throw MissingArgumentException("remove mod", "name")
         notifier.update("Trying to remove $modName...", force = true)
         modManager.removeMod(notifier, modName)
+    }
+
+    fun runRemoveFileCommand(notifier: Notifier, args: List<String>) {
+        val fileName = args.firstOrNull() ?: throw MissingArgumentException("remove file", "name")
+        profileManager.removeFile(notifier, fileName)
     }
 
     fun runAddModCommand(notifier: Notifier, args: List<String>) {
@@ -225,13 +239,7 @@ class CommandParser(
         try {
             cmd(this, notifier, tokens.drop(cmd.depthLevel))
         } catch (e: Exception) {
-            e.multicatch(
-                    NoCurrentProfileException::class,
-                    ProfileNotFoundException::class,
-                    MissingArgumentException::class,
-            ) {
-                notifier print e
-            }
+            notifier print e
         }
     }
 }

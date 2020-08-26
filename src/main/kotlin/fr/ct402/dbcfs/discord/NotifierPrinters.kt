@@ -35,7 +35,11 @@ fun Notifier.printStrings(list: List<String>, all: Boolean = false) {
             }
         }
     }
-    messages.add(acc)
+    if (acc.isEmpty()) {
+        print("*Empty*", force = true)
+        return
+    } else
+        messages.add(acc)
 
     if (!all)
         print(messages.first(), force = true)
@@ -66,4 +70,8 @@ infix fun Notifier.printGameReleases(list: List<GameVersion>) {
         (if (!it.isStable) ":tools:" else ":shield:") + " ${it.versionNumber} "
     }
     printStrings(strings)
+}
+
+infix fun Notifier.printProfileFiles(list: List<String>) {
+    printStrings(list.map { "$listPoint **$it** ~~DL link here~~" }, all = true)
 }

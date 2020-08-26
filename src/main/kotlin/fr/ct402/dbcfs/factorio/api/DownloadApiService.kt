@@ -143,6 +143,8 @@ class DownloadApiService(
                 cookies = mapOf(Pair("session", config.cookie)),
                 stream = true
         )
+        if (res.statusCode != 200) return false
+
         val extension = inferFileExtension(res.headers) ?: return false
         logger.debug("Inferred file extension : $extension")
 
