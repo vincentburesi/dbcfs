@@ -3,9 +3,9 @@ package fr.ct402.dbcfs.factorio.api;
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import fr.ct402.dbcfs.commons.AbstractComponent
+import fr.ct402.dbcfs.commons.Config
 import fr.ct402.dbcfs.commons.compareVersionStrings
 import fr.ct402.dbcfs.discord.Notifier
-import fr.ct402.dbcfs.factorio.FactorioConfigProperties
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.GameVersion
 import fr.ct402.dbcfs.persist.model.GameVersions
@@ -24,7 +24,7 @@ import java.net.URL
 @Service
 @Configuration
 class DownloadApiService(
-        private val config: FactorioConfigProperties,
+        private val config: Config,
         dbLoader: DbLoader
 ): AbstractComponent() {
     companion object {
@@ -91,7 +91,7 @@ class DownloadApiService(
         notifier.update("Starting game version sync...", force = true)
         val latest = getLatestVersions()
         val res = get("https://www.factorio.com/download/archive",
-                cookies = mapOf(Pair("session", config.cookie))
+                cookies = mapOf(Pair("session", config.factorio.cookie))
         )
 
         if (res.statusCode != 200) {
@@ -140,7 +140,7 @@ class DownloadApiService(
 
     fun downloadGameClient(webPath: String, localPath: String, notifier: Notifier): Boolean {
         val res = get("$factorioDownloadUrl$webPath",
-                cookies = mapOf(Pair("session", config.cookie)),
+                cookies = mapOf(Pair("session", config.factorio.cookie)),
                 stream = true
         )
         if (res.statusCode != 200) return false

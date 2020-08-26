@@ -1,6 +1,7 @@
 package fr.ct402.dbcfs.persist
 
 import fr.ct402.dbcfs.commons.AbstractComponent
+import fr.ct402.dbcfs.commons.Config
 import fr.ct402.dbcfs.commons.getLogger
 import fr.ct402.dbcfs.commons.orderDbLoad
 import me.liuwj.ktorm.database.Database
@@ -17,9 +18,9 @@ import java.sql.SQLException
 
 @Component
 @Configuration
-class DbLoader (private val config: DbConfigProperties): AbstractComponent() {
+class DbLoader (private val config: Config): AbstractComponent() {
     val database = Database.connect(
-            url = "jdbc:sqlite:${config.path}",
+            url = "jdbc:sqlite:${config.db.path}",
             driver = "org.sqlite.JDBC",
             dialect = SQLiteDialect()
     )

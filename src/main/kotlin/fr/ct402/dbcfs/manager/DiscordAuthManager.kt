@@ -1,8 +1,7 @@
 package fr.ct402.dbcfs.manager
 
-import fr.ct402.dbcfs.commons.getLogger
+import fr.ct402.dbcfs.commons.Config
 import fr.ct402.dbcfs.commons.orderAfterDbLoad
-import fr.ct402.dbcfs.discord.DiscordConfigProperties
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.AuthorizedId
@@ -25,7 +24,7 @@ import org.springframework.stereotype.Component
 @Component
 @Configuration
 class DiscordAuthManager (
-        val config: DiscordConfigProperties,
+        val config: Config,
         dbLoader: DbLoader
 ) {
     val authorizedIdSequence = dbLoader.database.sequenceOf(AuthorizedIds)
@@ -44,7 +43,7 @@ class DiscordAuthManager (
         return event.run {
             when {
                 author.isBot -> false
-                author.name == config.owner -> true
+                author.name == config.discord.owner -> true
                 authorizedUserIds.any { it.discordId == author.id } -> true
                 member?.roles?.map { it.id }
                         ?.intersect(authorizedRoleIds.map { it.discordId })

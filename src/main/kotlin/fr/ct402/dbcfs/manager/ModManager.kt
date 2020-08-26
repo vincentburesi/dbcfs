@@ -1,12 +1,8 @@
 package fr.ct402.dbcfs.manager
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import fr.ct402.dbcfs.commons.FactorioApiErrorException
-import fr.ct402.dbcfs.commons.ModNotFoundException
-import fr.ct402.dbcfs.commons.ModReleaseNotFoundException
-import fr.ct402.dbcfs.commons.getLogger
+import fr.ct402.dbcfs.commons.*
 import fr.ct402.dbcfs.discord.Notifier
-import fr.ct402.dbcfs.factorio.FactorioConfigProperties
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.*
@@ -20,7 +16,7 @@ import java.io.File
 @Component
 @Configuration
 class ModManager(
-        private val config: FactorioConfigProperties,
+        private val config: Config,
         val profileManager: ProfileManager,
         val modPortalApiService: ModPortalApiService,
         val dbLoader: DbLoader,
@@ -122,7 +118,7 @@ class ModManager(
     data class JsonModList(val mods: List<JsonModElem>)
 
     fun modDownloadUrl(modRelease: ModRelease) =
-            "https://mods.factorio.com/${modRelease.downloadUrl}?username=${config.username}&token=${config.token}"
+            "https://mods.factorio.com/${modRelease.downloadUrl}?username=${config.factorio.username}&token=${config.factorio.token}"
 
     fun downloadMods(profile: Profile, notifier: Notifier): Boolean {
         val modList = getModReleaseListByProfile(profile)

@@ -1,12 +1,11 @@
 package fr.ct402.dbcfs.factorio.api
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import fr.ct402.dbcfs.commons.AbstractComponent
+import fr.ct402.dbcfs.commons.Config
 import fr.ct402.dbcfs.commons.FactorioApiErrorException
 import fr.ct402.dbcfs.discord.Notifier
-import fr.ct402.dbcfs.factorio.FactorioConfigProperties
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.Mod
 import fr.ct402.dbcfs.persist.model.ModRelease
@@ -23,14 +22,14 @@ import kotlin.math.abs
 @Service
 @Configuration
 class ModPortalApiService(
-        private val config: FactorioConfigProperties,
+        private val config: Config,
         val dbLoader: DbLoader
 ): AbstractComponent() {
     fun modSequence() = dbLoader.database.sequenceOf(Mods)
     fun modReleaseSequence() = dbLoader.database.sequenceOf(ModReleases)
     val jsonMapper = jacksonObjectMapper()
     fun factorioModPortalUrl(page: Int, pageSize: Int = 25) = "http://mods.factorio.com/api/mods" +
-            "?username=${config.username}&token=${config.token}&page_size=$pageSize${if (page > 1) "&page=$page" else ""}"
+            "?username=${config.factorio.username}&token=${config.factorio.token}&page_size=$pageSize${if (page > 1) "&page=$page" else ""}"
 
     fun factorioModDetailUrl(modName: String) = "http://mods.factorio.com/api/mods/$modName/full"
 

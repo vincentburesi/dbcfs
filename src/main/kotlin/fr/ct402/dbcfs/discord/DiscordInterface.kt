@@ -2,6 +2,7 @@ package fr.ct402.dbcfs.discord
 
 import fr.ct402.dbcfs.CommandParser
 import fr.ct402.dbcfs.commons.AbstractComponent
+import fr.ct402.dbcfs.commons.Config
 import fr.ct402.dbcfs.commons.discordAuthorizedFiles
 import fr.ct402.dbcfs.manager.DiscordAuthManager
 import fr.ct402.dbcfs.manager.ProfileManager
@@ -30,7 +31,7 @@ import java.lang.Exception
 @Component
 @Configuration
 class DiscordInterface(
-        val config: DiscordConfigProperties,
+        val config: Config,
         val commandParser: CommandParser,
         val profileManager: ProfileManager,
         val discordAuthManager: DiscordAuthManager
@@ -58,7 +59,7 @@ class DiscordInterface(
     @EventListener(ApplicationReadyEvent::class)
     fun load() {
         logger.info("Loading discord interface")
-        jdaInternal = JDABuilder.createDefault(config.token)
+        jdaInternal = JDABuilder.createDefault(config.discord.token)
                 .addEventListeners(listener)
                 .build()
     }
