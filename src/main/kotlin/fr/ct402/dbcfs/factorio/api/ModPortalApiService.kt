@@ -44,12 +44,13 @@ class ModPortalApiService(
         return true
     }
 
-    fun syncModReleaseList(notifier: Notifier, mod: Mod) {
+    fun syncModReleaseList(mod: Mod, notifier: Notifier? = null) {
+        notifier?.update("Fetching releases for ${mod.name}...", force = true)
         val releases = retrieveModReleaseList(mod)
         val existings = modReleaseSequence().filter { it.mod eq mod.id }.toList()
 
         updateModReleasesDb(mod, releases, existings, notifier)
-        notifier.success("Successfully updated mod release list")
+        notifier?.success("Successfully updated mod release list")
     }
 
     //region syncModList internals
@@ -131,9 +132,9 @@ class ModPortalApiService(
         return jsonMapper.readValue<ModDetail>(res.text).releases
     }
 
-    private fun updateModReleasesDb(mod: Mod, releases: List<ModDetailRelease>, existingReleases: List<ModRelease>, notifier: Notifier) =
+    private fun updateModReleasesDb(mod: Mod, releases: List<ModDetailRelease>, existingReleases: List<ModRelease>, notifier: Notifier? = null) =
             releases.forEachIndexed { index, release ->
-                notifier.update("Adding modRelease $index of ${releases.size}...")
+                notifier?.update("Adding modRelease $index of ${releases.size}...")
                 val existing = existingReleases.find { it.downloadUrl == release.download_url }
                 buildDbEntry(mod, release, existing)?.updateOrAdd(existing == null)
             }

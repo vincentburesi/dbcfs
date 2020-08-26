@@ -72,3 +72,4 @@ class MissingArgumentException(cmd: String, argName: String): RuntimeException("
 class MatchingVersionNotFound(version: String): RuntimeException("Could not find matching version for $version. Try to sync the server or check factorio version list")
 class FactorioApiErrorException(): RuntimeException("An error occured during the Factorio API calls")
 class ModNotFoundException(name: String): RuntimeException("No mod found matching this name: $name. Try to sync the server or check factorio mod portal")
+class ModReleaseNotFoundException(modName: String, version: String? = null): RuntimeException("No mod release found matching $modName${ if (version != null) " version $version" else "" }")

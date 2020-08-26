@@ -107,16 +107,18 @@ class CommandParser (
 
     fun runRemoveModCommand(notifier: Notifier, args: List<String>) {
         val modName = args.firstOrNull() ?: throw MissingArgumentException("remove mod", "name")
-        modManager.removeMod(modName)
+        notifier.update("Trying to remove $modName...", force = true)
+        modManager.removeMod(notifier, modName)
     }
 
     fun runAddModCommand(notifier: Notifier, args: List<String>) {
         val modName = args.firstOrNull() ?: throw MissingArgumentException("add mod", "name")
         val version = args.getOrNull(1)
+        notifier.update("Trying to add $modName...", force = true)
         if (version == null)
-            modManager.addMod(modName)
+            modManager.addMod(notifier, modName)
         else
-            modManager.addMod(modName, version)
+            modManager.addMod(notifier, modName, version)
     }
 
     fun runSyncModCommand(notifier: Notifier, args: List<String>) {
@@ -124,7 +126,7 @@ class CommandParser (
             val name = args.firstOrNull() ?: throw MissingArgumentException("sync mod", "name")
             val mod = modManager.getModByNameOrThrow(name)
 
-            modPortalApiService.syncModReleaseList(notifier, mod)
+            modPortalApiService.syncModReleaseList(mod, notifier)
         }
     }
 

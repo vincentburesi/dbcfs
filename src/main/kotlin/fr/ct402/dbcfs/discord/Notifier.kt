@@ -16,8 +16,6 @@ class Notifier (
     private var nextMessage: String? = null
     private var job: Job? = null
     private var lastUpdate = System.nanoTime()
-//    var event: MessageReceivedEvent? = null
-//        private set
     var message: Message? = null
         private set
 
@@ -25,23 +23,15 @@ class Notifier (
         const val intervalInSeconds = 3
     }
 
-//    constructor(message: Message) {
-//        this.message = message
-//    }
-
-//    constructor(event: MessageReceivedEvent) {
-//        this.event = event
-//    }
-
     infix fun print(e: Exception) {
         error(e.message ?: "An unspecified error occured, please check the system logs")
     }
 
     fun success(str: String) =
-            update(str, true)
+            updateInternal(":green_circle:   $str", true)
 
     fun error(str: String) =
-            update(str, true) { logger.error(str) }
+            updateInternal(":red_circle:   $str", true) { logger.error(str) }
 
     fun missingArgument() =
             error("Missing argument for command : ${event.message.contentDisplay}")
@@ -49,7 +39,19 @@ class Notifier (
     fun parseError() =
             error("Could not parse your command : ${event.message.contentDisplay}")
 
+    fun print(
+            str: String,
+            force: Boolean = false,
+            log: () -> Unit = { logger.info(str) }
+    ) = updateInternal(str, force, log)
+
     fun update(
+            str: String,
+            force: Boolean = false,
+            log: () -> Unit = { logger.info(str) }
+    ) = updateInternal(":yellow_circle:   $str", force, log)
+
+    private fun updateInternal(
             str: String,
             force: Boolean = false,
             log: () -> Unit = { logger.info(str) }
