@@ -2,6 +2,9 @@ package fr.ct402.dbcfs
 
 import fr.ct402.dbcfs.commons.*
 import fr.ct402.dbcfs.discord.Notifier
+import fr.ct402.dbcfs.discord.printGameReleases
+import fr.ct402.dbcfs.discord.printModReleases
+import fr.ct402.dbcfs.discord.printProfiles
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
 import fr.ct402.dbcfs.manager.DiscordAuthManager
@@ -35,6 +38,18 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
         "mod" -> Command("Add mod to current profile", CommandParser::runAddModCommand, 2)
         else -> null
     }
+    "info" -> Command("Display current profile summary", CommandParser::runInfoCommand)
+    "list" -> when (it.nextOrNull()) {
+        "profiles" -> Command("List profiles", CommandParser::runListProfilesCommand, 2)
+        "mods" -> Command("List profiles", CommandParser::runListModsCommand, 2)
+//        "files" -> Command("List profiles", CommandParser::runListFilesCommand, 2)
+        "releases" -> when (it.nextOrNull()) {
+            "game" -> Command("List profiles", CommandParser::runListGameReleasesCommand, 3)
+            "mod" -> Command("List profiles", CommandParser::runListModReleasesCommand, 3)
+            else -> null
+        }
+        else -> null
+    }
     "authorize" -> Command("Adds mentionned @user and @roles to allowed whitelist", CommandParser::runAuthorizeCommand)
     "unauthorize" -> Command("Removes mentionned @user and @roles from allowed whitelist", CommandParser::runUnauthorizeCommand)
     "start" -> Command("Starts server for current profile", CommandParser::runStartCommand)
@@ -52,17 +67,46 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
 }
 
 @Component
-class CommandParser (
+class CommandParser(
         val profileManager: ProfileManager,
         val processManager: ProcessManager,
         val downloadApiService: DownloadApiService,
         val modPortalApiService: ModPortalApiService,
         val discordAuthManager: DiscordAuthManager,
         val modManager: ModManager,
-): AbstractComponent() {
+) : AbstractComponent() {
+
+    fun runInfoCommand(notifier: Notifier, args: List<String>) {
+        val profile = profileManager.currentProfileOrThrow
+        notifier.update("Fetching data...", force = true)
+        val nbMods = modManager.getModReleaseListByProfile(profile).size
+        val msg = "Current profile is ${profile.name}\nVersion ${profile.gameVersion.versionNumber} " +
+                (if (profile.gameVersion.localPath != null) " installed\n" else "\n") +
+                (if (profile.allowExperimental) "*experimental updates are enabled*\n" else "\n") +
+                (if (nbMods != 0) "*$nbMods mod${ if (nbMods == 1) " is" else "s are" } currently installed*" else "")
+        notifier.print(msg)
+    }
+
+    fun runListProfilesCommand(notifier: Notifier, args: List<String>) =
+            notifier printProfiles profileManager.getAllProfiles().sortedBy { it.name }
+
+    fun runListModsCommand(notifier: Notifier, args: List<String>) {
+        val name = args.firstOrNull()
+        val profile = if (name != null) profileManager.getProfileByNameOrThrow(name) else profileManager.currentProfileOrThrow
+        notifier printModReleases modManager.getModReleaseListByProfile(profile)
+    }
+
+    fun runListGameReleasesCommand(notifier: Notifier, args: List<String>) =
+            notifier printGameReleases profileManager.getAllGameReleases().groupBy { it.versionNumber }.map { it.value.first() }
+
+    fun runListModReleasesCommand(notifier: Notifier, args: List<String>) {
+        val modName = args.firstOrNull() ?: throw MissingArgumentException("list releases mod", "name")
+        notifier printModReleases modManager.getModReleaseListByName(modName)
+    }
 
     fun runRemoveProfileCommand(notifier: Notifier, args: List<String>) =
-            profileManager.removeProfile(args.firstOrNull() ?: throw MissingArgumentException("remove", "name"), notifier)
+            profileManager.removeProfile(args.firstOrNull()
+                    ?: throw MissingArgumentException("remove", "name"), notifier)
 
     fun runAuthorizeCommand(notifier: Notifier, args: List<String>) =
             discordAuthManager.addAuthorized(notifier.event.message, notifier)

@@ -2,7 +2,6 @@ package fr.ct402.dbcfs.manager
 
 import fr.ct402.dbcfs.commons.ModNotFoundException
 import fr.ct402.dbcfs.commons.ModReleaseNotFoundException
-import fr.ct402.dbcfs.commons.NoCurrentProfileException
 import fr.ct402.dbcfs.commons.getLogger
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
@@ -19,7 +18,7 @@ class ModManager(
         val dbLoader: DbLoader,
 ) {
     val logger = getLogger()
-    fun modReleaseProfileSequence() = dbLoader.database.sequenceOf(ModReleaseProfileMappings, withReferences = true)
+    fun modReleaseProfileMappingsSequence() = dbLoader.database.sequenceOf(ModReleaseProfileMappings, withReferences = true)
     fun modReleaseSequence() = dbLoader.database.sequenceOf(ModReleases)
     fun modSequence() = dbLoader.database.sequenceOf(Mods)
 
@@ -33,7 +32,7 @@ class ModManager(
     fun addMod(notifier: Notifier, modRelease: ModRelease) {
         val profile = profileManager.currentProfileOrThrow
         val releasesIds = modReleaseSequence().filter { it.mod eq modRelease.mod.id }.toList().map { it.id }
-        val duplicate = modReleaseProfileSequence().find { (it.profile eq profile.id) and it.modRelease.inList(releasesIds) }
+        val duplicate = modReleaseProfileMappingsSequence().find { (it.profile eq profile.id) and it.modRelease.inList(releasesIds) }
         if (duplicate != null) {
             notifier.error("Did not add mod ${modRelease.mod.name}, mod already present. Remove it first to change version")
             return
@@ -43,7 +42,7 @@ class ModManager(
             this.modRelease = modRelease
             this.profile = profile
         }
-        modReleaseProfileSequence().add(modReleaseProfileMapping)
+        modReleaseProfileMappingsSequence().add(modReleaseProfileMapping)
         notifier.success("Successfully added ${modRelease.mod.name} to ${profile.name}")
     }
 
@@ -75,7 +74,7 @@ class ModManager(
         val profile = profileManager.currentProfileOrThrow
         val mod = getModByNameOrThrow(modName)
 
-        val result = modReleaseProfileSequence().database
+        val result = modReleaseProfileMappingsSequence().database
                 .from(ModReleaseProfileMappings)
                 .leftJoin(ModReleases, on = ModReleaseProfileMappings.modRelease eq ModReleases.id)
                 .leftJoin(Mods, on = ModReleases.mod eq Mods.id)
@@ -87,9 +86,19 @@ class ModManager(
         else {
             result.forEach { entry ->
                 logger.info("Removing ${entry.id}|${entry.modRelease.id}|${entry.profile.id}")
-                modReleaseProfileSequence().removeIf { it.id eq entry.id }
+                modReleaseProfileMappingsSequence().removeIf { it.id eq entry.id }
             }
             notifier.success("Successfully removed ${mod.name} from ${profile.name} list of mods")
         }
+    }
+
+    fun getModReleaseListByProfile(profile: Profile): List<ModRelease> = modReleaseProfileMappingsSequence()
+            .filter { it.profile eq profile.id }
+            .toList()
+            .map { it.modRelease }
+
+    fun getModReleaseListByName(modName: String): List<ModRelease>{
+        val mod = getModByNameOrThrow(modName)
+        return modReleaseSequence().filter { it.mod eq mod.id }.toList()
     }
 }

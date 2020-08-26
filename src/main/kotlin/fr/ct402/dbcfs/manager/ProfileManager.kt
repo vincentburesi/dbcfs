@@ -25,34 +25,38 @@ import java.time.LocalDateTime
 class ProfileManager (
         val downloadApiService: DownloadApiService,
         val processManager: ProcessManager,
-        dbLoader: DbLoader
+        val dbLoader: DbLoader
 ): AbstractComponent() {
     final var currentProfile: Profile? = null
         private set
     val currentProfileOrThrow
         get() = currentProfile ?: throw NoCurrentProfileException()
 
-    private val profileSequence = dbLoader.database.sequenceOf(Profiles)
-    private val gameVersionSequence = dbLoader.database.sequenceOf(GameVersions)
+    private fun profileSequence() = dbLoader.database.sequenceOf(Profiles)
+    private fun gameReleaseSequence() = dbLoader.database.sequenceOf(GameVersions)
     private val secureRandom = SecureRandom()
     private val jsonMapper = jacksonObjectMapper()
+
+    fun getAllProfiles(): List<Profile> = profileSequence().toList()
+    fun getAllGameReleases(): List<GameVersion> = gameReleaseSequence().toList()
 
     private fun swapProfile(profile: Profile?) {
         currentProfile = profile
     }
 
+    fun getProfileByNameOrThrow(name: String) = getProfileByName(name) ?: throw ProfileNotFoundException(name)
     fun getProfileByName(name: String): Profile? {
         return if (currentProfile?.name == name)
             currentProfile
         else
-            profileSequence.find { it.name eq name }
+            profileSequence().find { it.name eq name }
     }
 
     /**
      * Attempts to swap current profile
      */
     fun swapProfile(name: String) =
-            swapProfile(profileSequence.find { it.name eq name } ?: throw ProfileNotFoundException(name))
+            swapProfile(profileSequence().find { it.name eq name } ?: throw ProfileNotFoundException(name))
 
     /**
      * Attempts to create a profile with the given name and parameters
@@ -63,7 +67,7 @@ class ProfileManager (
             allowExperimental: Boolean = false,
             notifier: Notifier
     ) {
-        val existing = profileSequence.find { it.name eq name }
+        val existing = profileSequence().find { it.name eq name }
         if (existing != null) {
             notifier.error("Profile already exists")
             return
@@ -78,7 +82,7 @@ class ProfileManager (
             this.gameVersion = getMatchingVersion(target) ?: throw MatchingVersionNotFound(target)
         }
         File(profile.localPath).apply { if (!exists()) mkdirs() }
-        profileSequence.add(profile)
+        profileSequence().add(profile)
         swapProfile(profile)
         notifier.success("Profile $name successfully created with version ${profile.gameVersion.versionNumber}")
     }
@@ -89,9 +93,9 @@ class ProfileManager (
     fun removeProfile(name: String, notifier: Notifier) {
         if (processManager.currentProcessProfileName == name) processManager.stop()
         if (currentProfile?.name == name) swapProfile(null)
-        val profile = profileSequence.find { it.name eq name }
+        val profile = profileSequence().find { it.name eq name }
         if (profile != null) {
-            profileSequence.removeIf { it.name eq name }
+            profileSequence().removeIf { it.name eq name }
             File(profile.localPath).apply { if (exists()) deleteRecursively() }
             notifier.success("Profile $name successfully removed")
         } else
@@ -101,7 +105,7 @@ class ProfileManager (
     private fun getMatchingVersion(approxVersion: String,
                            buildType: BuildType = BuildType.HEADLESS,
                            platform: Platform = Platform.LINUX64): GameVersion? {
-        val candidates = gameVersionSequence
+        val candidates = gameReleaseSequence()
                 .filter { it.versionNumber like "$approxVersion%" }
                 .toList()
                 .groupBy { it.versionNumber }
@@ -153,7 +157,7 @@ class ProfileManager (
     fun setServerSettings(profileName: String, serverSettings: ServerSettings): Boolean {
         val profile =
                 (if (currentProfile?.name == profileName) currentProfile
-                else profileSequence.find { it.name eq profileName })
+                else profileSequence().find { it.name eq profileName })
                         ?: return false
 
         return {
