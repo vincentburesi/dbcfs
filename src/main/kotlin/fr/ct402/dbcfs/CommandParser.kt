@@ -28,6 +28,11 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     }
     "remove" -> when (it.nextOrNull()) {
         "profile" -> Command("See remove-profile, remove-user, remove-file", CommandParser::runRemoveProfileCommand, 2)
+        "mod" -> Command("Remove mod from current profile", CommandParser::runRemoveModCommand, 2)
+        else -> null
+    }
+    "add" -> when (it.nextOrNull()) {
+        "mod" -> Command("Add mod to current profile", CommandParser::runAddModCommand, 2)
         else -> null
     }
     "authorize" -> Command("Adds mentionned @user and @roles to allowed whitelist", CommandParser::runAuthorizeCommand)
@@ -100,6 +105,20 @@ class CommandParser (
         profileManager.createProfile(name, targetVersion, experimental, notifier)
     }
 
+    fun runRemoveModCommand(notifier: Notifier, args: List<String>) {
+        val modName = args.firstOrNull() ?: throw MissingArgumentException("remove mod", "name")
+        modManager.removeMod(modName)
+    }
+
+    fun runAddModCommand(notifier: Notifier, args: List<String>) {
+        val modName = args.firstOrNull() ?: throw MissingArgumentException("add mod", "name")
+        val version = args.getOrNull(1)
+        if (version == null)
+            modManager.addMod(modName)
+        else
+            modManager.addMod(modName, version)
+    }
+
     fun runSyncModCommand(notifier: Notifier, args: List<String>) {
         notifier.launchAsCoroutine {
             val name = args.firstOrNull() ?: throw MissingArgumentException("sync mod", "name")
@@ -114,7 +133,7 @@ class CommandParser (
             downloadApiService.syncGameVersions(notifier)
         }
         notifier.launchAsCoroutine {
-            modPortalApiService.syncModList(notifier)
+            modPortalApiService.syncModList(Notifier(notifier.event))
         }
     }
 

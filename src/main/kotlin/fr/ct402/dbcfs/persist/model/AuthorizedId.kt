@@ -8,7 +8,7 @@ interface AuthorizedId : Entity<AuthorizedId> {
 
     companion object : Entity.Factory<AuthorizedId>()
 
-    val id: Int
+    var id: Int
     var name: String
     var discordId: String
     var idType: IdType

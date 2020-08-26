@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 interface Profile : Entity<Profile> {
     companion object : Entity.Factory<Profile>()
 
-    val id: Int
+    var id: Int
     var name: String
     var targetGameVersion: String
     var allowExperimental: Boolean

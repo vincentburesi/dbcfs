@@ -9,7 +9,7 @@ interface GameVersion : Entity<GameVersion> {
 
     companion object : Entity.Factory<GameVersion>()
 
-    val id: Int
+    var id: Int
     var versionNumber: String
     var buildType: BuildType
     var platform: Platform

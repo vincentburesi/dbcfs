@@ -141,6 +141,7 @@ class ModPortalApiService(
     private fun buildDbEntry(mod: Mod, release: ModDetailRelease, existing: ModRelease? = null): ModRelease? {
         return (existing ?: ModRelease()).apply {
             if (release.differs(this)) {
+                logger.info("DB building ${release.download_url}")
                 downloadUrl = release.download_url
                 fileName = release.file_name
                 infoJson = release.info_json.toString()
@@ -149,7 +150,7 @@ class ModPortalApiService(
                 sha1 = release.sha1
                 this.mod = mod
             } else {
-                logger.debug("Mod ${release.version} unchanged, skipped.")
+                logger.info("Mod ${release.version} unchanged, skipped")
                 return null
             }
         }

@@ -8,7 +8,7 @@ import me.liuwj.ktorm.schema.varchar
 interface ModRelease: Entity<ModRelease> {
     companion object: Entity.Factory<ModRelease>()
 
-    val id: Int
+    var id: Int
     var downloadUrl: String
     var fileName: String
     var infoJson: String // TODO Dependency list
@@ -35,7 +35,7 @@ val modReleaseSchema = """
         file_name TEXT NOT NULL UNIQUE,
         info_json TEXT NOT NULL,
         released_at TEXT NOT NULL,
-        version TEXT NOT NULL,
+        version TEXT NOT NULL UNIQUE,
         sha1 TEXT NOT NULL,
         mod_id INTEGER NOT NULL
     )

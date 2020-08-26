@@ -7,7 +7,7 @@ import me.liuwj.ktorm.schema.int
 interface ModReleaseProfileMapping : Entity<ModReleaseProfileMapping> {
     companion object : Entity.Factory<ModReleaseProfileMapping>()
 
-    val id: Int
+    var id: Int
     var modRelease: ModRelease
     var profile: Profile
 }

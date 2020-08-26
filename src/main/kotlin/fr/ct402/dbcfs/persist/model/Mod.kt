@@ -6,7 +6,7 @@ import me.liuwj.ktorm.schema.*
 interface Mod: Entity<Mod> {
     companion object : Entity.Factory<Mod>()
 
-    val id: Int
+    var id: Int
     var name: String
     var title: String
     var owner: String
