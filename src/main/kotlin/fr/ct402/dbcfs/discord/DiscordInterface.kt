@@ -1,24 +1,13 @@
 package fr.ct402.dbcfs.discord
 
-import fr.ct402.dbcfs.CommandParser
+import fr.ct402.dbcfs.commons.CommandRunner
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.Config
 import fr.ct402.dbcfs.commons.discordAuthorizedFiles
 import fr.ct402.dbcfs.manager.DiscordAuthManager
 import fr.ct402.dbcfs.manager.ProfileManager
-import fr.ct402.dbcfs.persist.DbLoader
-import fr.ct402.dbcfs.persist.model.AuthorizedId
-import fr.ct402.dbcfs.persist.model.AuthorizedIds
-import me.liuwj.ktorm.dsl.eq
-import me.liuwj.ktorm.entity.add
-import me.liuwj.ktorm.entity.removeIf
-import me.liuwj.ktorm.entity.sequenceOf
-import me.liuwj.ktorm.entity.toList
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
-import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.Role
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -32,7 +21,7 @@ import java.lang.Exception
 @Configuration
 class DiscordInterface(
         val config: Config,
-        val commandParser: CommandParser,
+        val commandRunner: CommandRunner,
         val profileManager: ProfileManager,
         val discordAuthManager: DiscordAuthManager
 ) : AbstractComponent() {
@@ -85,7 +74,7 @@ class DiscordInterface(
         logger.info("Message received raw : ${event.message.contentRaw}")
         logger.info("Message received displayed : ${event.message.contentDisplay}")
         logger.info("Message received stripped : ${event.message.contentStripped}")
-        commandParser.parseCommand(event)
+        commandRunner.parseCommand(event)
     }
 
 }

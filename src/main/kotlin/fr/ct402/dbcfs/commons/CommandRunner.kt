@@ -1,6 +1,5 @@
-package fr.ct402.dbcfs
+package fr.ct402.dbcfs.commons
 
-import fr.ct402.dbcfs.commons.*
 import fr.ct402.dbcfs.discord.*
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.api.ModPortalApiService
@@ -14,61 +13,8 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class Command(val help: String, val run: CommandParser.(Notifier, List<String>) -> Unit, val depthLevel: Int = 1) {
-    operator fun invoke(receiver: CommandParser, notifier: Notifier, args: List<String>) = receiver.run(notifier, args)
-}
-
-const val commandPrefix = "."
-
-fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
-    "help" -> Command("This is the help command documentation, it should come into form later", CommandParser::runHelpCommand)
-    "create" -> when (it.nextOrNull()) {
-        "profile" -> Command("Usage: create profile <name> [<version> experimental]", CommandParser::runCreateProfileCommand, 2)
-        else -> null
-    }
-    "remove" -> when (it.nextOrNull()) {
-        "profile" -> Command("See remove-profile, remove-user, remove-file", CommandParser::runRemoveProfileCommand, 2)
-        "mod" -> Command("Remove mod from current profile", CommandParser::runRemoveModCommand, 2)
-        "file" -> Command("Delete file from current profile", CommandParser::runRemoveFileCommand, 2)
-        else -> null
-    }
-    "add" -> when (it.nextOrNull()) {
-        "mod" -> Command("Add mod to current profile", CommandParser::runAddModCommand, 2)
-        else -> null
-    }
-    "info" -> Command("Display current profile summary", CommandParser::runInfoCommand)
-    "list" -> when (it.nextOrNull()) {
-        "profiles" -> Command("List profiles", CommandParser::runListProfilesCommand, 2)
-        "mods" -> Command("List profiles", CommandParser::runListModsCommand, 2)
-        "files" -> Command("List profiles", CommandParser::runListFilesCommand, 2)
-        "releases" -> when (it.nextOrNull()) {
-            "game" -> Command("List profiles", CommandParser::runListGameReleasesCommand, 3)
-            "mod" -> Command("List profiles", CommandParser::runListModReleasesCommand, 3)
-            else -> null
-        }
-        else -> null
-    }
-    "authorize" -> Command("Adds mentionned @user and @roles to allowed whitelist", CommandParser::runAuthorizeCommand)
-    "unauthorize" -> Command("Removes mentionned @user and @roles from allowed whitelist", CommandParser::runUnauthorizeCommand)
-    "start" -> Command("Starts server for current profile", CommandParser::runStartCommand)
-    "stop" -> Command("Stops the running process, if any", CommandParser::runStopCommand)
-    "build" -> Command("Builds current profile", CommandParser::runBuildCommand)
-    "swap" -> Command("Set given profile as current one", CommandParser::runSwapCommand)
-    "sync" -> when (it.nextOrNull()) {
-        "mod" -> Command("Synchronize the given mod releases", CommandParser::runSyncModReleasesCommand, 2)
-        "game" -> Command("Synchronize the game version list", CommandParser::runSyncGameReleasesCommand, 2)
-        "mods" -> Command("Synchronize the mod version list", CommandParser::runSyncModsCommand, 2)
-        "all", null -> Command("Synchronize the game version and mod list", CommandParser::runSyncAllCommand) //no args, ignore depth
-        else -> null
-    }
-    "test" -> Command("Used for testing features in dev", CommandParser::runTestCommand)
-    "edit" -> Command("Generate edit link to setup server via URL", CommandParser::runEditCommand)
-    "revoke" -> Command("Cancels current profile token", CommandParser::runRevokeCommand)
-    else -> null
-}
-
 @Component
-class CommandParser(
+class CommandRunner(
         val profileManager: ProfileManager,
         val processManager: ProcessManager,
         val downloadApiService: DownloadApiService,
@@ -220,6 +166,9 @@ class CommandParser(
         val profile = profileManager.currentProfileOrThrow.apply { invalidateToken() }
         notifier.success("Successfully revoked token for ${profile.name}, all related links are now invalid")
     }
+
+    fun runCurrentCommand(notifier: Notifier, args: List<String>) =
+            notifier.print(profileManager.currentProfile?.name ?: "*No profile selected*", force = true)
 
     fun runTestCommand(notifier: Notifier, args: List<String>) {
         val dateStr = args.firstOrNull()
