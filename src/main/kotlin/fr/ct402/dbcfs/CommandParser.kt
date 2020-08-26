@@ -58,7 +58,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "swap" -> Command("Set given profile as current one", CommandParser::runSwapCommand)
     "sync" -> when (it.nextOrNull()) {
         "mod" -> Command("Synchronize the given mod releases", CommandParser::runSyncModCommand, 2)
-        null -> Command("Synchronize the game version and mod list", CommandParser::runSyncCommand)
+        "all", null -> Command("Synchronize the game version and mod list", CommandParser::runSyncCommand) //no args, ignore depth
         else -> null
     }
     "test" -> Command("Used for testing features in dev", CommandParser::runTestCommand)
@@ -93,7 +93,7 @@ class CommandParser(
     fun runListModsCommand(notifier: Notifier, args: List<String>) {
         val name = args.firstOrNull()
         val profile = if (name != null) profileManager.getProfileByNameOrThrow(name) else profileManager.currentProfileOrThrow
-        notifier printModReleases modManager.getModReleaseListByProfile(profile)
+        notifier.printModReleases(modManager.getModReleaseListByProfile(profile))
     }
 
     fun runListGameReleasesCommand(notifier: Notifier, args: List<String>) =
@@ -101,7 +101,8 @@ class CommandParser(
 
     fun runListModReleasesCommand(notifier: Notifier, args: List<String>) {
         val modName = args.firstOrNull() ?: throw MissingArgumentException("list releases mod", "name")
-        notifier printModReleases modManager.getModReleaseListByName(modName)
+        val all = args.getOrNull(1) == "all"
+        notifier.printModReleases(modManager.getModReleaseListByName(modName), all)
     }
 
     fun runRemoveProfileCommand(notifier: Notifier, args: List<String>) =
