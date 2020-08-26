@@ -34,6 +34,9 @@ interface Profile : Entity<Profile> {
             }
     val localPath: String
             get() = "/mnt/profiles/$name"
+
+    fun checkAuth(authToken: String) =
+            !token.isNullOrBlank() && token == authToken && LocalDateTime.now().isBefore(tokenExpiration)
 }
 
 object Profiles : Table<Profile>("t_profile") {

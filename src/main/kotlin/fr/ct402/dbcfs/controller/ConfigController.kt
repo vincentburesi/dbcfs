@@ -22,9 +22,6 @@ class ConfigController (
 ) {
     val logger = getLogger()
 
-    fun Profile.checkAuth(authToken: String) =
-            !token.isNullOrBlank() && token == authToken && LocalDateTime.now().isBefore(tokenExpiration)
-
     @GetMapping("/{profileName}/{authToken}")
     fun getEditIndex(model: Model, @PathVariable profileName: String, @PathVariable authToken: String): String {
         logger.warn("getEditIndex - $profileName - $authToken")
