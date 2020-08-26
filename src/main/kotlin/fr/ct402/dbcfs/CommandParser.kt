@@ -55,8 +55,10 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "build" -> Command("Builds current profile", CommandParser::runBuildCommand)
     "swap" -> Command("Set given profile as current one", CommandParser::runSwapCommand)
     "sync" -> when (it.nextOrNull()) {
-        "mod" -> Command("Synchronize the given mod releases", CommandParser::runSyncModCommand, 2)
-        "all", null -> Command("Synchronize the game version and mod list", CommandParser::runSyncCommand) //no args, ignore depth
+        "mod" -> Command("Synchronize the given mod releases", CommandParser::runSyncModReleasesCommand, 2)
+        "game" -> Command("Synchronize the game version list", CommandParser::runSyncGameReleasesCommand, 2)
+        "mods" -> Command("Synchronize the mod version list", CommandParser::runSyncModsCommand, 2)
+        "all", null -> Command("Synchronize the game version and mod list", CommandParser::runSyncAllCommand) //no args, ignore depth
         else -> null
     }
     "test" -> Command("Used for testing features in dev", CommandParser::runTestCommand)
@@ -180,7 +182,7 @@ class CommandParser(
             modManager.addMod(notifier, modName, version)
     }
 
-    fun runSyncModCommand(notifier: Notifier, args: List<String>) {
+    fun runSyncModReleasesCommand(notifier: Notifier, args: List<String>) {
         notifier.launchAsCoroutine {
             val name = args.firstOrNull() ?: throw MissingArgumentException("sync mod", "name")
             val mod = modManager.getModByNameOrThrow(name)
@@ -189,13 +191,21 @@ class CommandParser(
         }
     }
 
-    fun runSyncCommand(notifier: Notifier, args: List<String>) {
+    fun runSyncGameReleasesCommand(notifier: Notifier, args: List<String>) {
         notifier.launchAsCoroutine {
             downloadApiService.syncGameVersions(notifier)
         }
+    }
+
+    fun runSyncModsCommand(notifier: Notifier, args: List<String>) {
         notifier.launchAsCoroutine {
-            modPortalApiService.syncModList(Notifier(notifier.event))
+            modPortalApiService.syncModList(notifier)
         }
+    }
+
+    fun runSyncAllCommand(notifier: Notifier, args: List<String>) {
+        runSyncGameReleasesCommand(notifier, args)
+        runSyncModsCommand(Notifier(notifier.event), args)
     }
 
     fun runEditCommand(notifier: Notifier, args: List<String>) {

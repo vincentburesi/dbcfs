@@ -1,5 +1,6 @@
 package fr.ct402.dbcfs.manager
 
+import fr.ct402.dbcfs.commons.getLogger
 import fr.ct402.dbcfs.commons.orderAfterDbLoad
 import fr.ct402.dbcfs.discord.DiscordConfigProperties
 import fr.ct402.dbcfs.discord.Notifier
@@ -45,7 +46,8 @@ class DiscordAuthManager (
                 author.isBot -> false
                 author.name == config.owner -> true
                 authorizedUserIds.any { it.discordId == author.id } -> true
-                member?.roles?.intersect(authorizedRoleIds.map { it.discordId })
+                member?.roles?.map { it.id }
+                        ?.intersect(authorizedRoleIds.map { it.discordId })
                         .orEmpty().isNotEmpty() -> true
                 else -> false
             }
