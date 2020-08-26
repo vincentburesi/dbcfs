@@ -63,6 +63,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     }
     "test" -> Command("Used for testing features in dev", CommandParser::runTestCommand)
     "edit" -> Command("Generate edit link to setup server via URL", CommandParser::runEditCommand)
+    "revoke" -> Command("Cancels current profile token", CommandParser::runRevokeCommand)
     else -> null
 }
 
@@ -74,6 +75,7 @@ class CommandParser(
         val modPortalApiService: ModPortalApiService,
         val discordAuthManager: DiscordAuthManager,
         val modManager: ModManager,
+        val config: Config,
 ) : AbstractComponent() {
 
     fun runInfoCommand(notifier: Notifier, args: List<String>) {
@@ -99,8 +101,11 @@ class CommandParser(
         notifier.printModReleases(modManager.getModReleaseListByProfile(profile))
     }
 
-    fun runListFilesCommand(notifier: Notifier, args: List<String>) =
-            notifier printProfileFiles profileManager.listFiles()
+    fun runListFilesCommand(notifier: Notifier, args: List<String>) {
+        val profile = profileManager.currentProfileOrThrow
+        profileManager.generateAuthToken(profile, notifier)
+        notifier.printProfileFiles(profileManager.listFiles(), profile, config.server.domain)
+    }
 
     fun runListGameReleasesCommand(notifier: Notifier, args: List<String>) =
             notifier printGameReleases profileManager.getAllGameReleases().groupBy { it.versionNumber }.map { it.value.first() }
@@ -208,9 +213,12 @@ class CommandParser(
         runSyncModsCommand(Notifier(notifier.event), args)
     }
 
-    fun runEditCommand(notifier: Notifier, args: List<String>) {
-        profileManager.currentProfileOrThrow
-        profileManager.generateAuthToken(notifier)
+    fun runEditCommand(notifier: Notifier, args: List<String>) =
+            profileManager.editProfileConfig(notifier)
+
+    fun runRevokeCommand(notifier: Notifier, args: List<String>) {
+        val profile = profileManager.currentProfileOrThrow.apply { invalidateToken() }
+        notifier.success("Successfully revoked token for ${profile.name}, all related links are now invalid")
     }
 
     fun runTestCommand(notifier: Notifier, args: List<String>) {

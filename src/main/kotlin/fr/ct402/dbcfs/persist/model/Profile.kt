@@ -37,6 +37,7 @@ interface Profile : Entity<Profile> {
 
     fun checkAuth(authToken: String) =
             !token.isNullOrBlank() && token == authToken && LocalDateTime.now().isBefore(tokenExpiration)
+    fun invalidateToken() = apply { token = null }.flushChanges()
 }
 
 object Profiles : Table<Profile>("t_profile") {

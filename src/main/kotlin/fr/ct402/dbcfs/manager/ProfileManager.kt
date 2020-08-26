@@ -146,22 +146,6 @@ class ProfileManager (
             false
     }
 
-    /**
-     * TODO Make generic (when with objecttype)
-     */
-    fun setServerSettings(profileName: String, serverSettings: ServerSettings): Boolean {
-        val profile =
-                (if (currentProfile?.name == profileName) currentProfile
-                else profileSequence().find { it.name eq profileName })
-                        ?: return false
-
-        return {
-            File(profile.localPath + "/server-settings.json")
-                    .writeText(jacksonObjectMapper().writeValueAsString(serverSettings))
-            true
-        } catch { false }
-    }
-
     fun uploadConfigFile(profile: Profile, settings: Any): Boolean {
         val configFileName = when (settings) {
             is ServerSettings -> "server-settings.json"
@@ -191,14 +175,9 @@ class ProfileManager (
         return true
     }
 
-    fun generateAuthToken(notifier: Notifier) {
+    fun generateAuthToken(profile: Profile, notifier: Notifier? = null) {
         logger.info("allowed chars $tokenAllowedChars")
         val now = LocalDateTime.now()
-        val profile = currentProfile
-        if (profile == null) {
-            notifier.error("No profile is currently selected, please select or create a profile first (See create profile or swap)") //FIXME
-            return
-        }
 
         profile.apply {
             if (token == null || tokenExpiration?.isAfter(now) != true)
@@ -207,9 +186,13 @@ class ProfileManager (
                 }.map(tokenAllowedChars::get).joinToString("")
             tokenExpiration = now.plusMinutes(tokenValidityInMinutes)
         }.flushChanges()
+    }
 
+    fun editProfileConfig(notifier: Notifier) {
+        val profile = currentProfileOrThrow
+        generateAuthToken(profile, notifier)
         notifier.success("You can edit your profile here : http://localhost:8080/edit/${profile.name}/${profile.token}\n" +
-                "The link will be valid for the next $tokenValidityInMinutes minutes")
+                "*Links will be valid for the next $tokenValidityInMinutes minutes*")
     }
 
     fun listFiles(customFilter: (File) -> Boolean = { true }): List<String> {
@@ -230,5 +213,4 @@ class ProfileManager (
             notifier.error("Could not remove $fileName, file doesn't exist")
         }
     }
-
 }

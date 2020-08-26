@@ -1,5 +1,6 @@
 package fr.ct402.dbcfs.discord
 
+import fr.ct402.dbcfs.commons.tokenValidityInMinutes
 import fr.ct402.dbcfs.persist.model.GameVersion
 import fr.ct402.dbcfs.persist.model.ModRelease
 import fr.ct402.dbcfs.persist.model.Profile
@@ -72,6 +73,7 @@ infix fun Notifier.printGameReleases(list: List<GameVersion>) {
     printStrings(strings)
 }
 
-infix fun Notifier.printProfileFiles(list: List<String>) {
-    printStrings(list.map { "$listPoint **$it** ~~DL link here~~" }, all = true)
+fun Notifier.printProfileFiles(list: List<String>, profile: Profile, domain: String) {
+    val strings = list.map { "$listPoint **$it** $domain/file/${profile.name}/${profile.token}/$it" }
+    printStrings(strings + "*Links will be valid for the next $tokenValidityInMinutes minutes*", all = true)
 }

@@ -55,7 +55,7 @@ fun printDateTime(dateTime: LocalDateTime): String =
         dateTime.format(DateTimeFormatter.ISO_DATE_TIME)
 
 const val tokenValidityInMinutes = 60L
-const val tokenLength = 64
+const val tokenLength = 32
 val tokenAllowedChars = ('A'..'Z').joinToString("") + ('a'..'z').joinToString("") + ('0'..'9').joinToString("")
 
 fun <R> Notifier.launchAsCoroutine(block: suspend () -> R) {

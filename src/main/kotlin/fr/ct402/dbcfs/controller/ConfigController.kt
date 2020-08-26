@@ -102,9 +102,7 @@ class ConfigController (
         logger.warn("Revoke - $profileName - $authToken")
         val profile = profileManager.getProfileByName(profileName) ?: throw HttpNotFoundException("Profile not found")
         if (profile.token == authToken)
-            profile.apply {
-                token = null
-            }.flushChanges()
+            profile.invalidateToken()
         else
             throw HttpForbiddenException("Bad auth token")
 
