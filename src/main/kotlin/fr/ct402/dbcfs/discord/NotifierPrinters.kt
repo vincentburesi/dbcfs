@@ -1,11 +1,13 @@
 package fr.ct402.dbcfs.discord
 
+import fr.ct402.dbcfs.commons.fileSizeAsString
 import fr.ct402.dbcfs.commons.tokenValidityInMinutes
 import fr.ct402.dbcfs.persist.model.GameVersion
 import fr.ct402.dbcfs.persist.model.ModRelease
 import fr.ct402.dbcfs.persist.model.Profile
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.io.File
 
 const val listPoint = ":small_blue_diamond:"
 const val discordMessageLimit = 2000
@@ -73,7 +75,11 @@ infix fun Notifier.printGameReleases(list: List<GameVersion>) {
     printStrings(strings)
 }
 
-fun Notifier.printProfileFiles(list: List<String>, profile: Profile, domain: String) {
-    val strings = list.map { "$listPoint **$it** $domain/file/${profile.name}/${profile.token}/$it" }
+fun Notifier.printProfileFiles(list: List<File>, profile: Profile, domain: String) {
+    val strings = list.map { "$listPoint **${it.name}** *${fileSizeAsString(it.length())}* $domain/file/${profile.name}/${profile.token}/$it" }
     printStrings(strings + "*Links will be valid for the next $tokenValidityInMinutes minutes*", all = true)
 }
+
+fun Notifier.success(fileName: String, profile: Profile, domain: String) =
+        success("**$fileName** $domain/file/${profile.name}/${profile.token}/$fileName\n"
+                + "*Link will be valid for the next $tokenValidityInMinutes minutes*")

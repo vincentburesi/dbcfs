@@ -2,10 +2,7 @@ package fr.ct402.dbcfs.factorio.api;
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import fr.ct402.dbcfs.commons.AbstractComponent
-import fr.ct402.dbcfs.commons.Config
-import fr.ct402.dbcfs.commons.FactorioApiErrorException
-import fr.ct402.dbcfs.commons.compareVersionStrings
+import fr.ct402.dbcfs.commons.*
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.GameVersion
@@ -162,8 +159,8 @@ class DownloadApiService(
         for (chunk in res.contentIterator(1024)) {
             destination.appendBytes(chunk)
             if (++i % 1024 == 0)
-                notifier?.update("Downloading ${i / 1024}Mo" +
-                        if (size == -1L) "..." else " of ${size / 1048576 }Mo...")
+                notifier?.update("Downloading ${fileSizeAsString(i.toLong() * 1024)}" +
+                        if (size == -1L) "..." else " of ${fileSizeAsString(size)}...")
         }
         notifier?.success("Download of **$fileName** complete")
         return fileName

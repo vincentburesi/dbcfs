@@ -88,7 +88,7 @@ class CommandRunner(
 
             val fileName = downloadApiService.downloadToProfile(release.path, profile, notifier)
             profileManager.generateAuthToken(profile)
-            notifier.printProfileFiles(listOf(fileName), profile, config.server.domain)
+            notifier.success(fileName, profile, config.server.domain)
         }
     }
 
@@ -99,7 +99,7 @@ class CommandRunner(
             modManager.downloadMods(profile, notifier)
             val fileName = profileManager.generateModPack(profile, notifier)
             profileManager.generateAuthToken(profile)
-            notifier.printProfileFiles(listOf(fileName), profile, config.server.domain)
+            notifier.success(fileName, profile, config.server.domain)
         }
     }
 

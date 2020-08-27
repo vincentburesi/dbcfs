@@ -272,12 +272,11 @@ class ProfileManager (
         notifier.success("You can edit your profile here : ${config.server.domain}/edit/${profile.name}/${profile.token}\n$linkValidityMention")
     }
 
-    fun listFiles(customFilter: (File) -> Boolean = { true }): List<String> {
+    fun listFiles(customFilter: (File) -> Boolean = { true }): List<File> {
         val profile = currentProfileOrThrow
         return File(profile.localPath).walk().maxDepth(1).toList()
                 .filter { it.isFile && it.name != "mod-list.json" }
                 .filter(customFilter)
-                .map { it.name }
     }
 
     fun removeFile(notifier: Notifier, fileName: String) {

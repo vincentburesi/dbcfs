@@ -23,6 +23,16 @@ fun compareVersionStrings(s1: String, s2: String): Int {
     return 0;
 }
 
+enum class SizeUnit (val unit: String, val multiplier: Long) {
+    BYTE("B", 1),
+    KILO("kB", 1024),
+    MEGA("MB", 1024 * 1024),
+    GIGA("GB", 1024 * 1024 * 1024),
+}
+val sizeUnits = SizeUnit.values().toList().sortedByDescending { it.multiplier }
+fun fileSizeAsString(size: Long) =
+        sizeUnits.first { it.multiplier < size }.let { "${size / it.multiplier}${it.unit}" }
+
 val possibleConfigFiles = setOf("server-settings.json", "map-gen-settings.json", "map-settings.json") //TODO Check the names
 const val baseDataDir = "/mnt"
 const val factorioExecutableRelativeLocation = "factorio/bin/x64/factorio"
