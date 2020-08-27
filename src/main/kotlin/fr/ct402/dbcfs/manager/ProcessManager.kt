@@ -63,7 +63,7 @@ class ProcessManager (
             notifier.error("Cannot build map, game has not been downloaded")
             return false
         } else
-            notifier.update("Building map...")
+            notifier.update("Building map...", force = true)
 
         val p = Runtime.getRuntime().exec(arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
                 "--create", mapPath,

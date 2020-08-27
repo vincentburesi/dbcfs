@@ -116,8 +116,8 @@ class ProfileManager (
 
     fun updateProfile(
             profile: Profile,
-            targetGameVersion: String? = null,
-            allowExperimental: Boolean = false,
+            targetGameVersion: String? = profile.targetGameVersion,
+            allowExperimental: Boolean = profile.allowExperimental,
             notifier: Notifier,
     ): Boolean {
         notifier.update("Starting update...", force = true)
@@ -187,7 +187,7 @@ class ProfileManager (
             notifier.success("Game version already downloaded")
             return true
         } else
-            notifier.update("Starting download for **${version.versionNumber}**...")
+            notifier.update("Starting download for **${version.versionNumber}**...", force = true)
 
         val destination = File("$baseDataDir/bin/${version.versionNumber}")
         destination.mkdirs()

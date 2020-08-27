@@ -114,14 +114,43 @@ class CommandRunner(
         processManager.start(profileManager.currentProfileOrThrow, notifier, save)
     }
 
-    fun runUpdateCommand(notifier: Notifier, args: List<String>) {
+    fun runUpdateProfileCommand(notifier: Notifier, args: List<String>) {
         val profile = profileManager.currentProfileOrThrow
         if (profileManager.updateProfile(profile, args.firstOrNull(),
                         args.getOrElse(1) { "false" }.toBoolean(), notifier))
             notifier.launchAsCoroutine {
-                profileManager.downloadGame(notifier) && modManager.downloadMods(profile, notifier) && processManager.genMap(profile, notifier)
+                profileManager.downloadGame(notifier) && modManager.downloadMods(profile, notifier)
                 notifier.success("Update successful, server version is now **${profile.gameVersion.versionNumber}**")
             }
+    }
+
+    fun runUpdateModCommand(notifier: Notifier, args: List<String>) {
+        val profile = profileManager.currentProfileOrThrow
+        val modName = args.firstOrNull() ?: throw MissingArgumentException("update mod", "name")
+        val version = args.getOrNull(1)
+
+        modManager.removeMod(notifier, modName, true)
+        if (version == null)
+            modManager.addMod(notifier, modName)
+        else
+            modManager.addMod(notifier, modName, version)
+        modManager.downloadMods(profile, notifier)
+        notifier.success("Successfully updated **$modName** to **${version ?: "latest version"}**")
+    }
+
+    fun runUpdateAllCommand(notifier: Notifier, args: List<String>) {
+        val profile = profileManager.currentProfileOrThrow
+        profileManager.updateProfile(profile, notifier = notifier)
+        modManager.getModReleaseListByProfile(profile).forEach {
+            modManager.apply {
+                removeMod(notifier, it.mod.name, true)
+                addMod(notifier, it.mod.name)
+            }
+        }
+        notifier.launchAsCoroutine {
+            profileManager.downloadGame(notifier) && modManager.downloadMods(profile, notifier)
+            notifier.success("Update successful, everything is now to latest version")
+        }
     }
 
     fun runSwapCommand(notifier: Notifier, args: List<String>) {

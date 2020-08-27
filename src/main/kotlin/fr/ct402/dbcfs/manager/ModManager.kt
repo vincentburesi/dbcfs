@@ -75,7 +75,7 @@ class ModManager(
         addMod(notifier, modRelease)
     }
 
-    fun removeMod(notifier: Notifier, modName: String) {
+    fun removeMod(notifier: Notifier, modName: String, quiet: Boolean = false) {
         val profile = profileManager.currentProfileOrThrow
         val mod = getModByNameOrThrow(modName)
 
@@ -105,7 +105,8 @@ class ModManager(
                         .apply { if (exists()) delete() }
                 modReleaseProfileMappingsSequence().removeIf { it.id eq entry.id }
             }
-            notifier.success("Successfully removed **${mod.name}** from **${profile.name}**'s list of mods")
+            if (!quiet)
+                notifier.success("Successfully removed **${mod.name}** from **${profile.name}**'s list of mods")
         }
     }
 
@@ -121,20 +122,24 @@ class ModManager(
             "https://mods.factorio.com/${modRelease.downloadUrl}?username=${config.factorio.username}&token=${config.factorio.token}"
 
     fun downloadMods(profile: Profile, notifier: Notifier): Boolean {
+        File("${profile.localPath}/$profileRelativeModDirectory").apply {
+            deleteRecursively()
+            mkdirs()
+        }
+
         val modList = getModReleaseListByProfile(profile)
         if (modList.isEmpty())
             return true
-        notifier.update("Retrieving mods...")
 
+        notifier.update("Retrieving mods...", force = true)
         modList.forEachIndexed { index, modRelease ->
             notifier.update("Retrieving mods ($index of ${modList.size})...")
             val res = get(modDownloadUrl(modRelease), stream = true)
             if (res.statusCode != 200) throw FactorioApiErrorException()
 
             val file = File("${profile.localPath}/$profileRelativeModDirectory/${modRelease.fileName}")
-            if (!file.exists())
-                for (chunk in res.contentIterator(1024))
-                    file.appendBytes(chunk)
+            for (chunk in res.contentIterator(1024))
+                file.appendBytes(chunk)
         }
 
         val jsonModList = JsonModList(modList.map { JsonModElem(it.mod.name, true) })

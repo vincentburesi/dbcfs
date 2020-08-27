@@ -50,7 +50,12 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "start" -> Command("Starts server for current profile", CommandRunner::runStartCommand)
     "stop" -> Command("Stops the running process, if any", CommandRunner::runStopCommand)
     "build" -> Command("Builds current profile", CommandRunner::runBuildCommand)
-    "update" -> Command("Changes the current profile's version", CommandRunner::runUpdateCommand)
+    "update" -> when (it.nextOrNull()) {
+        "profile" -> Command("Changes the current profile's version", CommandRunner::runUpdateProfileCommand, 2)
+        "mod" -> Command("Changes the given mod version", CommandRunner::runUpdateModCommand, 2)
+        "all" -> Command("Updates every current profile's component to the latest version", CommandRunner::runUpdateAllCommand, 2)
+        else -> null
+    }
     "swap" -> Command("Set given profile as current one", CommandRunner::runSwapCommand)
     "sync" -> when (it.nextOrNull()) {
         "mod" -> Command("Synchronize the given mod releases", CommandRunner::runSyncModReleasesCommand, 2)
