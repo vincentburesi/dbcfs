@@ -29,14 +29,14 @@ class CommandRunner(
         val profile = profileManager.currentProfileOrThrow
         notifier.update("Fetching data...", force = true)
         val nbMods = modManager.getModReleaseListByProfile(profile).size
-        val nbSaves = profileManager.listFiles { it.extension == "zip" }.size
-        val msg = "Current profile is ${profile.name}\nVersion ${profile.gameVersion.versionNumber} " +
-                (if (profile.gameVersion.localPath != null) " installed" else "") +
+        val nbSaves = profileManager.listFiles { it.extension == "zip" && !it.nameWithoutExtension.endsWith("-modpack") }.size
+        val msg = "Current profile is **${profile.name}**\nVersion **${profile.gameVersion.versionNumber}**" +
+                (if (profile.gameVersion.localPath != null) " is installed" else "") +
                 (if (profile.allowExperimental) "\n*experimental updates are enabled*" else "") +
                 (if (nbMods != 0) "\n*$nbMods mod${ if (nbMods == 1) " is" else "s are" } currently installed*" else "") +
-                (if (nbSaves != 0) "\n*$nbSaves save${ if (nbMods == 1) " is" else "s are" } currently present*" else "") //TODO ignore all zip package files
+                (if (nbSaves != 0) "\n*$nbSaves save${ if (nbSaves == 1) " is" else "s are" } currently present*" else "")
 
-        notifier.print(msg)
+        notifier.print(msg, force = true)
     }
 
     fun runListProfilesCommand(notifier: Notifier, args: List<String>) =
@@ -120,7 +120,7 @@ class CommandRunner(
                         args.getOrElse(1) { "false" }.toBoolean(), notifier))
             notifier.launchAsCoroutine {
                 profileManager.downloadGame(notifier) && modManager.downloadMods(profile, notifier) && processManager.genMap(profile, notifier)
-                notifier.success("Update successful, server version is now ${profile.gameVersion.versionNumber}")
+                notifier.success("Update successful, server version is now **${profile.gameVersion.versionNumber}**")
             }
     }
 
@@ -128,7 +128,7 @@ class CommandRunner(
         val name = args.firstOrNull() ?: throw MissingArgumentException("swap", "name")
 
         profileManager.swapProfile(name)
-        notifier.success("Current profile is now $name")
+        notifier.success("Current profile is now **$name**")
     }
 
     fun runStopCommand(notifier: Notifier, args: List<String>) {
@@ -155,9 +155,16 @@ class CommandRunner(
         profileManager.createProfile(name, targetVersion, experimental, notifier)
     }
 
+    fun runCopyProfileCommand(notifier: Notifier, args: List<String>) {
+        val name = args.firstOrNull() ?: throw MissingArgumentException("copy profile", "new_name")
+        val profile = profileManager.currentProfileOrThrow
+
+        profileManager.copyProfile(name, profile, notifier)
+    }
+
     fun runRemoveModCommand(notifier: Notifier, args: List<String>) {
         val modName = args.firstOrNull() ?: throw MissingArgumentException("remove mod", "name")
-        notifier.update("Trying to remove $modName...", force = true)
+        notifier.update("Trying to remove **$modName**...", force = true)
         modManager.removeMod(notifier, modName)
     }
 
@@ -170,7 +177,7 @@ class CommandRunner(
         val modName = args.firstOrNull() ?: throw MissingArgumentException("add mod", "name")
         val version = args.getOrNull(1)
         profileManager.currentProfileOrThrow
-        notifier.update("Trying to add $modName...", force = true)
+        notifier.update("Trying to add **$modName**...", force = true)
         if (version == null)
             modManager.addMod(notifier, modName)
         else
@@ -208,11 +215,8 @@ class CommandRunner(
 
     fun runRevokeCommand(notifier: Notifier, args: List<String>) {
         val profile = profileManager.currentProfileOrThrow.apply { invalidateToken() }
-        notifier.success("Successfully revoked token for ${profile.name}, all related links are now invalid")
+        notifier.success("Successfully revoked token for **${profile.name}**, all related links are now invalid")
     }
-
-    fun runCurrentCommand(notifier: Notifier, args: List<String>) =
-            notifier.print(profileManager.currentProfile?.name ?: "*No profile selected*", force = true)
 
     fun runTestCommand(notifier: Notifier, args: List<String>) {
         val dateStr = args.firstOrNull()
@@ -231,7 +235,6 @@ class CommandRunner(
         notifier.print(msg, force = true)
     }
 
-    //FIXME Should be part of Notifier class
     companion object {
         fun notImplemented(notifier: Notifier) =
                 notifier.error("Feature not implemented yet : ${notifier.event.message.contentDisplay}")

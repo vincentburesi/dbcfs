@@ -57,6 +57,10 @@ class ProfileManager (
             profileSequence().find { it.name eq name }
     }
 
+    fun checkNameAvailableOrThrow(name: String) {
+        if (getProfileByName(name) != null) throw ProfileNameNotAvailableException(name)
+    }
+
     /**
      * Attempts to swap current profile
      */
@@ -72,11 +76,7 @@ class ProfileManager (
             allowExperimental: Boolean = false,
             notifier: Notifier
     ) {
-        val existing = profileSequence().find { it.name eq name }
-        if (existing != null) {
-            notifier.error("Profile already exists")
-            return
-        }
+        checkNameAvailableOrThrow(name)
 
         val target = targetGameVersion ?: DownloadApiService.getLatestVersions().stable.headless
         notifier.update("Attempting to create profile with target version $target")
@@ -89,7 +89,29 @@ class ProfileManager (
         File("${profile.localPath}/$profileRelativeModDirectory").apply { if (!exists()) mkdirs() }
         profileSequence().add(profile)
         swapProfile(profile)
-        notifier.success("Profile $name successfully created with version ${profile.gameVersion.versionNumber}")
+        notifier.success("Profile **$name** successfully created with version **${profile.gameVersion.versionNumber}**")
+    }
+
+    fun copyProfile(name: String, oldProfile: Profile, notifier: Notifier) {
+        notifier.update("Starting profile copy...")
+        checkNameAvailableOrThrow(name)
+        val newProfile = Profile().apply {
+            this.name = name
+            this.targetGameVersion = oldProfile.targetGameVersion
+            this.allowExperimental = oldProfile.allowExperimental
+            this.gameVersion = oldProfile.gameVersion
+        }
+
+        val newPath = newProfile.localPath
+        val oldPath = oldProfile.localPath
+        val newModFolder = File("$newPath/$profileRelativeModDirectory").apply { if (!exists()) mkdirs() }
+        val oldModFolder = File("$oldPath/$profileRelativeModDirectory")
+        oldModFolder.apply { if (exists()) copyRecursively(newModFolder) }
+        possibleConfigFiles.forEach { File("$oldPath/$it").apply { if (exists()) copyTo(File("$newPath/$it")) } }
+
+        profileSequence().add(newProfile)
+        swapProfile(newProfile)
+        notifier.success("Profile **$name** successfully created as a copy of **${oldProfile.name}**")
     }
 
     fun updateProfile(
@@ -101,7 +123,7 @@ class ProfileManager (
         notifier.update("Starting update...", force = true)
         val target = targetGameVersion ?: DownloadApiService.getLatestVersions().stable.headless
         if (target == profile.gameVersion.versionNumber) {
-            notifier.success("Profile ${profile.name} is already at version $target")
+            notifier.success("Profile **${profile.name}** is already at version **$target**")
             return false
         }
         profile.apply {
@@ -115,7 +137,7 @@ class ProfileManager (
             mkdirs()
         }
         File("${profile.localPath}/${profile.name}-modpack.zip").apply { if (exists()) delete() }
-        notifier.update("Successfully changed ${profile.name}, running build to complete update...")
+        notifier.update("Successfully changed **${profile.name}**, running build to complete update...")
         return true
     }
 
@@ -127,7 +149,7 @@ class ProfileManager (
         if (processManager.currentProcessProfileName == profile.name) processManager.stop()
         profileSequence().removeIf { it.id eq profile.id }
         File(profile.localPath).apply { if (exists()) deleteRecursively() }
-        notifier.success("Profile ${profile.name} successfully removed")
+        notifier.success("Profile **${profile.name}** successfully removed")
     }
 
     private fun getMatchingVersion(approxVersion: String,
@@ -165,7 +187,7 @@ class ProfileManager (
             notifier.success("Game version already downloaded")
             return true
         } else
-            notifier.update("Starting download for ${version.versionNumber}...")
+            notifier.update("Starting download for **${version.versionNumber}**...")
 
         val destination = File("$baseDataDir/bin/${version.versionNumber}")
         destination.mkdirs()
@@ -263,9 +285,9 @@ class ProfileManager (
         val file = File(profile.localPath + "/$fileName")
         if (file.exists()) {
             file.delete()
-            notifier.success("Successfully removed file $fileName")
+            notifier.success("Successfully removed file **$fileName**")
         } else {
-            notifier.error("Could not remove $fileName, file doesn't exist")
+            notifier.error("Could not remove **$fileName**, file doesn't exist")
         }
     }
 }

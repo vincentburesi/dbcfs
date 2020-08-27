@@ -28,11 +28,9 @@ class ProcessManager (
         val cmd = arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
                 "--start-server", "${profile.localPath}/$saveName",
                 "--server-settings", profile.findConfig("server-settings"),
-                "--console-log", "${profile.localPath}/server-logs", //TODO
+                "--console-log", "${profile.localPath}/server-logs",
                 "--mod-directory", "${profile.localPath}/$profileRelativeModDirectory",
-        ).let {
-            it.plus(arrayOf("--server-whitelist", profile.serverWhitelist ?: return@let it))
-        }
+        )
 
         mutex.withLock {
             if (currentProcess?.isAlive == true) throw IllegalStateException("Server already started")

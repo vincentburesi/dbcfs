@@ -23,7 +23,7 @@ fun compareVersionStrings(s1: String, s2: String): Int {
     return 0;
 }
 
-val discordAuthorizedFiles = setOf("server-settings.json", "map-gen-settings.json", "map-settings.json") //TODO Check the names
+val possibleConfigFiles = setOf("server-settings.json", "map-gen-settings.json", "map-settings.json") //TODO Check the names
 const val baseDataDir = "/mnt"
 const val factorioExecutableRelativeLocation = "factorio/bin/x64/factorio"
 const val profileRelativeModDirectory = "mods"
@@ -72,6 +72,7 @@ fun <R> Notifier.launchAsCoroutine(block: suspend () -> R) {
 
 class NoCurrentProfileException: RuntimeException("No profile is currently selected, please select or create a profile first (See create profile or swap)")
 class ProfileNotFoundException(name: String): RuntimeException("No profile found matching this name: $name")
+class ProfileNameNotAvailableException(name: String): RuntimeException("A profile already exists with this name: $name")
 class MissingArgumentException(cmd: String, argName: String): RuntimeException("$cmd: Missing $argName argument")
 class InvalidArgumentException(argName: String, possibleValues: String): RuntimeException("$argName is invalid, possible values are $possibleValues")
 class MatchingVersionNotFound(version: String): RuntimeException("Could not find matching version for $version. Try to sync the server or check factorio version list")

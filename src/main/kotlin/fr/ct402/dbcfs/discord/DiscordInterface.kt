@@ -3,7 +3,7 @@ package fr.ct402.dbcfs.discord
 import fr.ct402.dbcfs.commons.CommandRunner
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.Config
-import fr.ct402.dbcfs.commons.discordAuthorizedFiles
+import fr.ct402.dbcfs.commons.possibleConfigFiles
 import fr.ct402.dbcfs.manager.DiscordAuthManager
 import fr.ct402.dbcfs.manager.ProfileManager
 import net.dv8tion.jda.api.JDA
@@ -56,15 +56,15 @@ class DiscordInterface(
     fun handleAttachments(event: MessageReceivedEvent) {
         event.message.attachments.forEach {
             val msg = try {
-                if (it.fileName in discordAuthorizedFiles) {
+                if (it.fileName in possibleConfigFiles) {
                     if (profileManager.uploadConfigFile(it))
-                        "Sucessfully added ${it.fileName}"
+                        "Sucessfully added **${it.fileName}**"
                     else
-                        "Error adding ${it.fileName}: Current profile is not selected"
+                        "Error adding **${it.fileName}**: Current profile is not selected"
                 } else
-                    "Error cannot add ${it.fileName}, name does not match authorized (${discordAuthorizedFiles.reduce { acc, s -> "$acc, $s" }})"
+                    "Error cannot add **${it.fileName}**, name does not match authorized (${possibleConfigFiles.reduce { acc, s -> "$acc, $s" }})"
             } catch (e: Exception) {
-                "Error downloading ${it.fileName}: ${e.message}"
+                "Error downloading **${it.fileName}**: ${e.message}"
             }
             event.channel.sendMessage(msg).queue()
         }

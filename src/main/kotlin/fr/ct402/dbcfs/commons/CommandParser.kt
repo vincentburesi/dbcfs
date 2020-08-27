@@ -14,6 +14,10 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
         "profile" -> Command("Usage: create profile <name> [<version> experimental]", CommandRunner::runCreateProfileCommand, 2)
         else -> null
     }
+    "copy" -> when (it.nextOrNull()) {
+        "profile" -> Command("Usage: copy profile <new_name>", CommandRunner::runCopyProfileCommand, 2)
+        else -> null
+    }
     "remove" -> when (it.nextOrNull()) {
         "profile" -> Command("See remove-profile, remove-user, remove-file", CommandRunner::runRemoveProfileCommand, 2)
         "mod" -> Command("Remove mod from current profile", CommandRunner::runRemoveModCommand, 2)
@@ -58,6 +62,5 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "test" -> Command("Used for testing features in dev", CommandRunner::runTestCommand)
     "edit" -> Command("Generate edit link to setup server via URL", CommandRunner::runEditCommand)
     "revoke" -> Command("Cancels current profile token", CommandRunner::runRevokeCommand)
-    "current" -> Command("Shows current profile", CommandRunner::runCurrentCommand)
     else -> null
 }

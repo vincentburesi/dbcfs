@@ -33,9 +33,6 @@ class Notifier (
     fun error(str: String) =
             updateInternal(":red_circle:   $str", true) { logger.error(str) }
 
-    fun missingArgument() =
-            error("Missing argument for command : ${event.message.contentDisplay}")
-
     fun parseError() =
             error("Could not parse your command : ${event.message.contentDisplay}")
 
@@ -79,7 +76,7 @@ class Notifier (
         if (message != null)
             message!!.editMessage(msg).queue()
         else
-            message = event!!.channel.sendMessage(msg).complete()
+            message = event.channel.sendMessage(msg).complete()
     }
 
     private val updater = suspend updater@{

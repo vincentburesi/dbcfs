@@ -165,7 +165,7 @@ class DownloadApiService(
                 notifier?.update("Downloading ${i / 1024}Mo" +
                         if (size == -1L) "..." else " of ${size / 1048576 }Mo...")
         }
-        notifier?.success("Download of $fileName complete")
+        notifier?.success("Download of **$fileName** complete")
         return fileName
     }
 

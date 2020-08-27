@@ -39,7 +39,7 @@ class ModManager(
         val releasesIds = modReleaseSequence().filter { it.mod eq modRelease.mod.id }.toList().map { it.id }
         val duplicate = modReleaseProfileMappingsSequence().find { (it.profile eq profile.id) and it.modRelease.inList(releasesIds) }
         if (duplicate != null) {
-            notifier.error("Did not add mod ${modRelease.mod.name}, mod already present. Remove it first to change version")
+            notifier.error("Did not add mod **${modRelease.mod.name}**, mod already present. Remove it first to change version")
             return
         }
 
@@ -48,7 +48,7 @@ class ModManager(
             this.profile = profile
         }
         modReleaseProfileMappingsSequence().add(modReleaseProfileMapping)
-        notifier.success("Successfully added ${modRelease.mod.name} to ${profile.name}")
+        notifier.success("Successfully added **${modRelease.mod.name}** to **${profile.name}**")
     }
 
     fun addMod(notifier: Notifier, modName: String, exactVersion: String) {
@@ -59,7 +59,7 @@ class ModManager(
                 getModReleaseByVersionOrThrow(mod, exactVersion)
             } else this
         }
-        notifier.update("Found ${mod.name} version ${modRelease.version}...")
+        notifier.update("Found **${mod.name}** version **${modRelease.version}**...")
         addMod(notifier, modRelease)
     }
 
@@ -71,7 +71,7 @@ class ModManager(
                 getLatestModReleaseOrThrow(mod)
             } else this
         }
-        notifier.update("Found ${mod.name} version ${modRelease.version}...")
+        notifier.update("Found **${mod.name}** version **${modRelease.version}**...")
         addMod(notifier, modRelease)
     }
 
@@ -87,12 +87,12 @@ class ModManager(
                 .where { (Mods.name eq mod.name) and (ModReleaseProfileMappings.profile eq profile.id) }
                 .map { ModReleaseProfileMappings.createEntity(it) }
         if (result.isEmpty())
-            notifier.error("Did not find ${mod.name} in ${profile.name} list of mods")
+            notifier.error("Did not find **${mod.name}** in **${profile.name}**'s list of mods")
         else {
             result.forEach { entry ->
                 val modRelease = modReleaseSequence().find { it.id eq entry.modRelease.id }
                 if (modRelease == null) {
-                    notifier.error("Did not find ${mod.name} in ${profile.name} list of mods")
+                    notifier.error("Did not find **${mod.name}** in **${profile.name}**'s list of mods")
                     return
                 }
 
@@ -105,7 +105,7 @@ class ModManager(
                         .apply { if (exists()) delete() }
                 modReleaseProfileMappingsSequence().removeIf { it.id eq entry.id }
             }
-            notifier.success("Successfully removed ${mod.name} from ${profile.name} list of mods")
+            notifier.success("Successfully removed **${mod.name}** from **${profile.name}**'s list of mods")
         }
     }
 

@@ -53,7 +53,7 @@ fun Notifier.printStrings(list: List<String>, all: Boolean = false) {
 infix fun Notifier.printProfiles(list: List<Profile>) {
     val strings = list.map {
         (if (it.allowExperimental) ":tools:" else ":shield:") +
-                " ${it.name} - ${it.gameVersion.versionNumber}" +
+                " **${it.name}** - ${it.gameVersion.versionNumber}" +
                 (if (it.gameVersion.localPath != null) " :floppy_disk:" else "")
     }
     printStrings(strings)
@@ -61,14 +61,14 @@ infix fun Notifier.printProfiles(list: List<Profile>) {
 
 fun Notifier.printModReleases(list: List<ModRelease>, all: Boolean = false) {
     val strings = list.map {
-        "$listPoint ${it.mod.name} - ${it.version} - *${it.mod.summary}*"
+        "$listPoint **${it.mod.name}** - ${it.version} - *${it.mod.summary}*"
     }.reversed()
     printStrings(strings, all)
 }
 
 infix fun Notifier.printGameReleases(list: List<GameVersion>) {
     val strings = list.map {
-        (if (!it.isStable) ":tools:" else ":shield:") + " ${it.versionNumber} "
+        (if (!it.isStable) ":tools:" else ":shield:") + " **${it.versionNumber}** "
     }
     printStrings(strings)
 }
