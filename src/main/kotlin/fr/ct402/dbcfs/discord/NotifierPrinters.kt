@@ -76,7 +76,7 @@ infix fun Notifier.printGameReleases(list: List<GameVersion>) {
 }
 
 fun Notifier.printProfileFiles(list: List<File>, profile: Profile, domain: String) {
-    val strings = list.map { "$listPoint **${it.name}** *${fileSizeAsString(it.length())}* $domain/file/${profile.name}/${profile.token}/$it" }
+    val strings = list.map { "$listPoint **${it.name}** *${fileSizeAsString(it.length())}* $domain/file/${profile.name}/${profile.token}/${it.name}" }
     printStrings(strings + "*Links will be valid for the next $tokenValidityInMinutes minutes*", all = true)
 }
 
