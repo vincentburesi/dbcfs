@@ -35,7 +35,7 @@ val modReleaseSchema = """
         file_name TEXT NOT NULL UNIQUE,
         info_json TEXT NOT NULL,
         released_at TEXT NOT NULL,
-        version TEXT NOT NULL UNIQUE,
+        version TEXT NOT NULL,
         sha1 TEXT NOT NULL,
         mod_id INTEGER NOT NULL
     )

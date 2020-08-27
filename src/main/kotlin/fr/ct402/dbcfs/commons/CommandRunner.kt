@@ -92,6 +92,17 @@ class CommandRunner(
         }
     }
 
+    fun runGetModPackCommand(notifier: Notifier, args: List<String>) {
+        notifier.launchAsCoroutine {
+            val profile = profileManager.currentProfileOrThrow
+            notifier.update("Generating modpack file...", force = true)
+            modManager.downloadMods(profile, notifier)
+            val fileName = profileManager.generateModPack(profile, notifier)
+            profileManager.generateAuthToken(profile)
+            notifier.printProfileFiles(listOf(fileName), profile, config.server.domain)
+        }
+    }
+
     fun runAuthorizeCommand(notifier: Notifier, args: List<String>) =
             discordAuthManager.addAuthorized(notifier.event.message, notifier)
 
@@ -101,6 +112,16 @@ class CommandRunner(
     fun runStartCommand(notifier: Notifier, args: List<String>) = notifier.launchAsCoroutine {
         val save = args.firstOrNull()
         processManager.start(profileManager.currentProfileOrThrow, notifier, save)
+    }
+
+    fun runUpdateCommand(notifier: Notifier, args: List<String>) {
+        val profile = profileManager.currentProfileOrThrow
+        if (profileManager.updateProfile(profile, args.firstOrNull(),
+                        args.getOrElse(1) { "false" }.toBoolean(), notifier))
+            notifier.launchAsCoroutine {
+                profileManager.downloadGame(notifier) && modManager.downloadMods(profile, notifier) && processManager.genMap(profile, notifier)
+                notifier.success("Update successful, server version is now ${profile.gameVersion.versionNumber}")
+            }
     }
 
     fun runSwapCommand(notifier: Notifier, args: List<String>) {
@@ -148,6 +169,7 @@ class CommandRunner(
     fun runAddModCommand(notifier: Notifier, args: List<String>) {
         val modName = args.firstOrNull() ?: throw MissingArgumentException("add mod", "name")
         val version = args.getOrNull(1)
+        profileManager.currentProfileOrThrow
         notifier.update("Trying to add $modName...", force = true)
         if (version == null)
             modManager.addMod(notifier, modName)
@@ -219,6 +241,7 @@ class CommandRunner(
     }
 
     fun parseCommand(event: MessageReceivedEvent) {
+        logger.info("Parsing command: ${event.message.contentRaw}")
         val content = event.message.contentRaw.trimStart()
         val str = removePrefix(content) ?: if (event.isFromType(ChannelType.PRIVATE)) content else return
         val tokens = str.trimStart().split(' ').filter { it.isNotEmpty() }

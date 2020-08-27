@@ -26,6 +26,7 @@ fun compareVersionStrings(s1: String, s2: String): Int {
 val discordAuthorizedFiles = setOf("server-settings.json", "map-gen-settings.json", "map-settings.json") //TODO Check the names
 const val baseDataDir = "/mnt"
 const val factorioExecutableRelativeLocation = "factorio/bin/x64/factorio"
+const val profileRelativeModDirectory = "mods"
 
 const val orderDbLoad = 1
 const val orderAfterDbLoad = 2

@@ -70,11 +70,6 @@ class DiscordInterface(
         }
     }
 
-    fun handleCommand(event: MessageReceivedEvent) {
-        logger.info("Message received raw : ${event.message.contentRaw}")
-        logger.info("Message received displayed : ${event.message.contentDisplay}")
-        logger.info("Message received stripped : ${event.message.contentStripped}")
-        commandRunner.parseCommand(event)
-    }
+    fun handleCommand(event: MessageReceivedEvent) = commandRunner.parseCommand(event)
 
 }

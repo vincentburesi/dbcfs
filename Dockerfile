@@ -1,6 +1,6 @@
 FROM openjdk:11-jdk
 
-RUN apt-get update && apt-get install tar
+RUN apt-get update && apt-get install --yes tar zip
 
 ENV UID 1000
 ENV GID 1000

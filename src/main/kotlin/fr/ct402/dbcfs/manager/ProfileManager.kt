@@ -3,7 +3,6 @@ package fr.ct402.dbcfs.manager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import fr.ct402.dbcfs.commons.*
 import fr.ct402.dbcfs.discord.Notifier
-import fr.ct402.dbcfs.discord.printProfileFiles
 import fr.ct402.dbcfs.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.factorio.config.MapGenSettings
 import fr.ct402.dbcfs.factorio.config.MapSettings
@@ -84,10 +83,37 @@ class ProfileManager (
             this.allowExperimental = allowExperimental
             this.gameVersion = getMatchingVersion(target) ?: throw MatchingVersionNotFound(target)
         }
-        File(profile.localPath + "/mods").apply { if (!exists()) mkdirs() }
+        File("${profile.localPath}/$profileRelativeModDirectory").apply { if (!exists()) mkdirs() }
         profileSequence().add(profile)
         swapProfile(profile)
         notifier.success("Profile $name successfully created with version ${profile.gameVersion.versionNumber}")
+    }
+
+    fun updateProfile(
+            profile: Profile,
+            targetGameVersion: String? = null,
+            allowExperimental: Boolean = false,
+            notifier: Notifier,
+    ): Boolean {
+        notifier.update("Starting update...", force = true)
+        val target = targetGameVersion ?: DownloadApiService.getLatestVersions().stable.headless
+        if (target == profile.gameVersion.versionNumber) {
+            notifier.success("Profile ${profile.name} is already at version $target")
+            return false
+        }
+        profile.apply {
+            this.targetGameVersion = target
+            this.allowExperimental = allowExperimental
+            this.gameVersion = getMatchingVersion(target) ?: throw MatchingVersionNotFound(target)
+        }
+        notifier.update("Cleaning obsoletes files...")
+        File("${profile.localPath}/$profileRelativeModDirectory").apply {
+            if (exists()) deleteRecursively()
+            mkdirs()
+        }
+        File("${profile.localPath}/${profile.name}-modpack.zip").apply { if (exists()) delete() }
+        notifier.update("Successfully changed ${profile.name}, running build to complete update...")
+        return true
     }
 
     /**
@@ -178,7 +204,6 @@ class ProfileManager (
     }
 
     fun generateAuthToken(profile: Profile) {
-        logger.info("allowed chars $tokenAllowedChars")
         val now = LocalDateTime.now()
 
         profile.apply {
@@ -188,6 +213,32 @@ class ProfileManager (
                 }.map(tokenAllowedChars::get).joinToString("")
             tokenExpiration = now.plusMinutes(tokenValidityInMinutes)
         }.flushChanges()
+        logger.info("Refreshed token for ${profile.name}: ${profile.token}")
+    }
+
+    fun generateModPack(profile: Profile, notifier: Notifier): String {
+        val modFolder = profileRelativeModDirectory
+        val fileName = "${profile.name}-modpack.zip"
+        val archive = File("${profile.localPath}/$fileName").apply {
+            if (exists()) {
+                notifier.update("Removing old archive...", force = true)
+                delete()
+            }
+        }.name
+        val cmd = arrayOf("zip", "-r", archive, modFolder, "-x", "$modFolder/mod-settings.dat")
+        notifier.update("Creating archive...")
+        logger.warn("CMD: ${cmd.joinToString(" ")}")
+
+        val p = Runtime.getRuntime().exec(cmd, null, File(profile.localPath))
+        p.waitFor()
+        if (p.exitValue() != 0) {
+            notifier.error("Archive creation failed")
+            logger.error("Command Failed : $cmd")
+            logger.error("\n" + p.inputStream.bufferedReader().use { it.readText() })
+            logger.error("\n" + p.errorStream.bufferedReader().use { it.readText() })
+        } else
+            notifier.success("Extraction successful")
+        return fileName
     }
 
     fun editProfileConfig(notifier: Notifier) {

@@ -96,12 +96,12 @@ class ModManager(
                     return
                 }
 
-                File("${profile.localPath}/mods/${modRelease.fileName}")
+                File("${profile.localPath}/$profileRelativeModDirectory/${modRelease.fileName}")
                         .apply {
                             logger.error("Removing ${this.absolutePath}")
                             if (exists()) delete()
                         }
-                File("${profile.localPath}/mods/mod-list.json")
+                File("${profile.localPath}/$profileRelativeModDirectory/mod-list.json")
                         .apply { if (exists()) delete() }
                 modReleaseProfileMappingsSequence().removeIf { it.id eq entry.id }
             }
@@ -131,14 +131,14 @@ class ModManager(
             val res = get(modDownloadUrl(modRelease), stream = true)
             if (res.statusCode != 200) throw FactorioApiErrorException()
 
-            val file = File("${profile.localPath}/mods/${modRelease.fileName}")
+            val file = File("${profile.localPath}/$profileRelativeModDirectory/${modRelease.fileName}")
             if (!file.exists())
                 for (chunk in res.contentIterator(1024))
                     file.appendBytes(chunk)
         }
 
         val jsonModList = JsonModList(modList.map { JsonModElem(it.mod.name, true) })
-        File("${profile.localPath}/mods/mod-list.json")
+        File("${profile.localPath}/$profileRelativeModDirectory/mod-list.json")
                 .writeText(jsonMapper.writeValueAsString(jsonModList))
 
         notifier.success("Successfully downloaded mods")

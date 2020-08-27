@@ -2,6 +2,7 @@ package fr.ct402.dbcfs.manager
 
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.factorioExecutableRelativeLocation
+import fr.ct402.dbcfs.commons.profileRelativeModDirectory
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.Profile
@@ -28,7 +29,7 @@ class ProcessManager (
                 "--start-server", "${profile.localPath}/$saveName",
                 "--server-settings", profile.findConfig("server-settings"),
                 "--console-log", "${profile.localPath}/server-logs", //TODO
-                "--mod-directory", "${profile.localPath}/mods",
+                "--mod-directory", "${profile.localPath}/$profileRelativeModDirectory",
         ).let {
             it.plus(arrayOf("--server-whitelist", profile.serverWhitelist ?: return@let it))
         }
@@ -44,8 +45,9 @@ class ProcessManager (
                 currentProcessProfileName = profile.name
                 notifier.success("Server successfully started")
             } else {
-                notifier.error("Failed to start server, see logs for details")
-                logger.warn(p.inputStream.bufferedReader().use { it.readText() })
+                val output = p.inputStream.bufferedReader().use { it.readText() }
+                notifier.error("Failed to start server, see logs for details\n```\n...${output.takeLast(1500)}\n```\n")
+                logger.warn(output)
                 logger.error(p.errorStream.bufferedReader().use { it.readText() })
             }
         }
@@ -70,7 +72,7 @@ class ProcessManager (
                 "--map-gen-settings", profile.findConfig("map-gen-settings"),
                 "--map-settings", profile.findConfig("map-settings"),
                 "--console-log", "${profile.localPath}/map-generation-logs",
-                "--mod-directory", "${profile.localPath}/mods",
+                "--mod-directory", "${profile.localPath}/$profileRelativeModDirectory",
         ))
 
         return if (p.waitFor() == 0) {

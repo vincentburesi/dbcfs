@@ -38,6 +38,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     }
     "get" -> when (it.nextOrNull()) {
         "client" -> Command("Get game client download link for current profile, can specify platform (**win64 -default-**, win32, linux64, linux32 or osx)", CommandRunner::runGetClientCommand, 2)
+        "mods" -> Command("Get mods archive download link for current profile", CommandRunner::runGetModPackCommand, 2)
         else -> null
     }
     "authorize" -> Command("Adds mentionned @user and @roles to allowed whitelist", CommandRunner::runAuthorizeCommand)
@@ -45,6 +46,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "start" -> Command("Starts server for current profile", CommandRunner::runStartCommand)
     "stop" -> Command("Stops the running process, if any", CommandRunner::runStopCommand)
     "build" -> Command("Builds current profile", CommandRunner::runBuildCommand)
+    "update" -> Command("Changes the current profile's version", CommandRunner::runUpdateCommand)
     "swap" -> Command("Set given profile as current one", CommandRunner::runSwapCommand)
     "sync" -> when (it.nextOrNull()) {
         "mod" -> Command("Synchronize the given mod releases", CommandRunner::runSyncModReleasesCommand, 2)
