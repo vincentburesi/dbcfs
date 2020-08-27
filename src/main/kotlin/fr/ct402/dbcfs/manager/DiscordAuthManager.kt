@@ -4,16 +4,15 @@ import fr.ct402.dbcfs.commons.Config
 import fr.ct402.dbcfs.commons.orderAfterDbLoad
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.persist.DbLoader
-import fr.ct402.dbcfs.persist.model.AuthorizedId
-import fr.ct402.dbcfs.persist.model.AuthorizedIds
+import fr.ct402.dbcfs.persist.model.AllowedId
+import fr.ct402.dbcfs.persist.model.AllowedId.IdType.*
+import fr.ct402.dbcfs.persist.model.AllowedIds
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.add
 import me.liuwj.ktorm.entity.removeIf
 import me.liuwj.ktorm.entity.sequenceOf
 import me.liuwj.ktorm.entity.toList
-import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.Role
-import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Configuration
@@ -27,47 +26,67 @@ class DiscordAuthManager (
         val config: Config,
         dbLoader: DbLoader
 ) {
-    val authorizedIdSequence = dbLoader.database.sequenceOf(AuthorizedIds)
-    val authorizedUserIds = arrayListOf<AuthorizedId>()
-    val authorizedRoleIds = arrayListOf<AuthorizedId>()
+    val allowedIdSequence = dbLoader.database.sequenceOf(AllowedIds)
+    val allowedUserIds = arrayListOf<AllowedId>()
+    val allowedRoleIds = arrayListOf<AllowedId>()
+    val allowedChannelIds = arrayListOf<AllowedId>()
 
     @Order(orderAfterDbLoad)
     @EventListener(ApplicationReadyEvent::class)
     fun load() {
-        val authorizedId = authorizedIdSequence.toList()
-        authorizedUserIds.addAll(authorizedId.filter { it.idType == AuthorizedId.IdType.USER })
-        authorizedRoleIds.addAll(authorizedId.filter { it.idType == AuthorizedId.IdType.ROLE })
+        val allowedId = allowedIdSequence.toList()
+        allowedUserIds.addAll(allowedId.filter { it.idType == USER })
+        allowedRoleIds.addAll(allowedId.filter { it.idType == ROLE })
     }
 
-    fun isAuthorized(event: MessageReceivedEvent): Boolean {
+    fun User.isOwner() = (name == config.discord.owner)
+    fun User.isAllowed() = allowedUserIds.any { it.discordId == id }
+
+    fun Member.isAllowed() = roles
+            .map { it.id }
+            .intersect(allowedRoleIds.map { it.discordId })
+            .isNotEmpty()
+
+    fun TextChannel.isAllowed() = allowedChannelIds.any { it.discordId == id }
+
+    fun isAllowed(event: MessageReceivedEvent): Boolean {
         return event.run {
             when {
-                author.isBot -> false
-                author.name == config.discord.owner -> true
-                authorizedUserIds.any { it.discordId == author.id } -> true
-                member?.roles?.map { it.id }
-                        ?.intersect(authorizedRoleIds.map { it.discordId })
-                        .orEmpty().isNotEmpty() -> true
-                else -> false
+                author.isOwner() ->
+                    true
+                author.isBot ->
+                    false
+                isFromGuild ->
+                    if (isFromType(ChannelType.TEXT) && textChannel.isAllowed())
+                        author.isAllowed() || member?.isAllowed() == true
+                    else
+                        false
+                else ->
+                    author.isAllowed()
             }
         }
     }
 
-
-    fun buildAuthorizedId(id: String, name: String, isRole: Boolean) =
-            AuthorizedId().apply {
+    fun buildAllowedId(id: String, name: String, type: AllowedId.IdType) =
+            AllowedId().apply {
                 discordId = id
                 this.name = name
-                idType = if (isRole) AuthorizedId.IdType.ROLE else AuthorizedId.IdType.USER
+                idType = type
             }
 
-    fun addAuthorizedId(id: String, name: String, isRole: Boolean): Boolean {
-        val idList = if (isRole) authorizedRoleIds else authorizedUserIds
+    private fun getAllowedIdList(type: AllowedId.IdType) = when (type) {
+        USER -> allowedUserIds
+        ROLE -> allowedRoleIds
+        CHANNEL -> allowedChannelIds
+    }
+
+    private fun addAllowedId(id: String, name: String, type: AllowedId.IdType): Boolean {
+        val idList = getAllowedIdList(type)
 
         return when (val entity = idList.find { it.discordId == id }) {
             null ->
-                buildAuthorizedId(id, name, isRole).let {
-                    authorizedIdSequence.add(it)
+                buildAllowedId(id, name, type).let {
+                    allowedIdSequence.add(it)
                     idList.add(it)
                     true
                 }
@@ -82,65 +101,79 @@ class DiscordAuthManager (
         }
     }
 
-    fun removeAuthorizedId(id: String, isRole: Boolean): Boolean {
-        val idList = if (isRole) authorizedRoleIds else authorizedUserIds
+    private fun removeAllowedId(id: String, type: AllowedId.IdType): Boolean {
+        val idList = getAllowedIdList(type)
 
         return when (val entity = idList.find { it.discordId == id }) {
             null -> false
             else -> entity.let {
                 idList.remove(entity)
-                authorizedIdSequence.removeIf { it.discordId eq entity.discordId }
+                allowedIdSequence.removeIf { it.discordId eq entity.discordId }
                 true
             }
         }
     }
 
-    fun addAuthorizedUser(user: User) =
-            addAuthorizedId(user.id, user.name, false)
+    fun allowUser(user: User) =
+            addAllowedId(user.id, user.name, USER)
 
-    fun addAuthorizedRole(role: Role) =
-            addAuthorizedId(role.id, role.name, true)
+    fun allowRole(role: Role) =
+            addAllowedId(role.id, role.name, ROLE)
 
-    fun removeAuthorizedUser(user: User) =
-            removeAuthorizedId(user.id, false)
+    fun allowChannel(channel: TextChannel) =
+            addAllowedId(channel.id, channel.name, CHANNEL)
 
-    fun removeAuthorizedRole(role: Role) =
-            removeAuthorizedId(role.id, true)
+    fun disallowUser(user: User) =
+            removeAllowedId(user.id, USER)
 
-    fun addAuthorized(message: Message, notifier: Notifier) {
+    fun disallowRole(role: Role) =
+            removeAllowedId(role.id, ROLE)
+
+    fun disallowChannel(channel: TextChannel) =
+            removeAllowedId(channel.id, CHANNEL)
+
+    fun allowFromMentions(message: Message, notifier: Notifier) {
         val ignored = arrayListOf<String>()
 
         message.mentionedUsers.forEach {
-            if (!addAuthorizedUser(it))
+            if (!allowUser(it))
                 ignored.add(it.name)
         }
         message.mentionedRoles.forEach {
-            if (!addAuthorizedRole(it))
+            if (!allowRole(it))
+                ignored.add(it.name)
+        }
+        message.mentionedChannels.forEach {
+            if (!allowChannel(it))
                 ignored.add(it.name)
         }
 
         if (ignored.isEmpty())
-            notifier.success("Authorized all properly mentioned users and roles")
+            notifier.success("Allowed all properly mentioned users, roles and channels")
         else
-            notifier.error("Following users and roles are already authorized and were ignored: ${ ignored.reduce { acc, s -> "$acc, $s" } }")
+            notifier.error("Following users, roles and channels are already allowed and were ignored: ${ ignored.reduce { acc, s -> "$acc, $s" } }")
     }
 
-    fun removeAuthorized(message: Message, notifier: Notifier) {
+    fun disallowFromMentions(message: Message, notifier: Notifier) {
         val ignored = arrayListOf<String>()
 
         message.mentionedUsers.forEach {
-            if (!removeAuthorizedUser(it))
+            if (!disallowUser(it))
                 ignored.add(it.name)
         }
         message.mentionedRoles.forEach {
-            if (!removeAuthorizedRole(it))
+            if (!disallowRole(it))
+                ignored.add(it.name)
+        }
+        message.mentionedChannels.forEach {
+            if (!disallowChannel(it))
                 ignored.add(it.name)
         }
 
         if (ignored.isEmpty())
-            notifier.success("Removed all properly mentioned users and roles from authorized list")
+            notifier.success("Removed all properly mentioned users, roles and channels from allowed list")
         else
-            notifier.error("Following users and roles are not authorized and were ignored: ${ ignored.reduce { acc, s -> "$acc, $s" } }")
+            notifier.error("Following users, roles and channels were not in allowed list: ${ ignored.reduce { acc, s -> "$acc, $s" } }")
     }
 
 }

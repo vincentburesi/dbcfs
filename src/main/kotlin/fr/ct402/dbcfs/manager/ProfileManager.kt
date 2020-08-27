@@ -15,6 +15,7 @@ import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.dsl.like
 import me.liuwj.ktorm.entity.*
 import net.dv8tion.jda.api.entities.Message
+import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
 import java.io.File
 import java.lang.Exception
@@ -22,7 +23,9 @@ import java.security.SecureRandom
 import java.time.LocalDateTime
 
 @Component
+@Configuration
 class ProfileManager (
+        val config: Config,
         val downloadApiService: DownloadApiService,
         val processManager: ProcessManager,
         val dbLoader: DbLoader
@@ -244,7 +247,7 @@ class ProfileManager (
     fun editProfileConfig(notifier: Notifier) {
         val profile = currentProfileOrThrow
         generateAuthToken(profile)
-        notifier.success("You can edit your profile here : http://localhost:8080/edit/${profile.name}/${profile.token}\n$linkValidityMention")
+        notifier.success("You can edit your profile here : ${config.server.domain}/edit/${profile.name}/${profile.token}\n$linkValidityMention")
     }
 
     fun listFiles(customFilter: (File) -> Boolean = { true }): List<String> {

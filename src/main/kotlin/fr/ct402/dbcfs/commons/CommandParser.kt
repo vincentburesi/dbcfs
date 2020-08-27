@@ -41,8 +41,8 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
         "mods" -> Command("Get mods archive download link for current profile", CommandRunner::runGetModPackCommand, 2)
         else -> null
     }
-    "authorize" -> Command("Adds mentionned @user and @roles to allowed whitelist", CommandRunner::runAuthorizeCommand)
-    "unauthorize" -> Command("Removes mentionned @user and @roles from allowed whitelist", CommandRunner::runUnauthorizeCommand)
+    "allow" -> Command("Adds mentionned @user and @roles to allowed whitelist", CommandRunner::runAllowCommand)
+    "disallow" -> Command("Removes mentionned @user and @roles from allowed whitelist", CommandRunner::runDisallowCommand)
     "start" -> Command("Starts server for current profile", CommandRunner::runStartCommand)
     "stop" -> Command("Stops the running process, if any", CommandRunner::runStopCommand)
     "build" -> Command("Builds current profile", CommandRunner::runBuildCommand)

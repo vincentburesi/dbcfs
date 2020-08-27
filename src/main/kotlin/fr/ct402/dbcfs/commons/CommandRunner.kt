@@ -103,11 +103,11 @@ class CommandRunner(
         }
     }
 
-    fun runAuthorizeCommand(notifier: Notifier, args: List<String>) =
-            discordAuthManager.addAuthorized(notifier.event.message, notifier)
+    fun runAllowCommand(notifier: Notifier, args: List<String>) =
+            discordAuthManager.allowFromMentions(notifier.event.message, notifier)
 
-    fun runUnauthorizeCommand(notifier: Notifier, args: List<String>) =
-            discordAuthManager.removeAuthorized(notifier.event.message, notifier)
+    fun runDisallowCommand(notifier: Notifier, args: List<String>) =
+            discordAuthManager.disallowFromMentions(notifier.event.message, notifier)
 
     fun runStartCommand(notifier: Notifier, args: List<String>) = notifier.launchAsCoroutine {
         val save = args.firstOrNull()

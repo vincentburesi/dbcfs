@@ -29,7 +29,7 @@ class DiscordInterface(
         override fun onReady(event: ReadyEvent) = logger.info("Discord interface successfully connected")
 
         override fun onMessageReceived(event: MessageReceivedEvent) {
-            if (discordAuthManager.isAuthorized(event)) {
+            if (discordAuthManager.isAllowed(event)) {
                 if (event.message.attachments.isEmpty())
                     handleCommand(event)
                 else
