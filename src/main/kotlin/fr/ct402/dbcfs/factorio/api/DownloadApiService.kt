@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import fr.ct402.dbcfs.commons.AbstractComponent
 import fr.ct402.dbcfs.commons.Config
+import fr.ct402.dbcfs.commons.FactorioApiErrorException
 import fr.ct402.dbcfs.commons.compareVersionStrings
 import fr.ct402.dbcfs.discord.Notifier
 import fr.ct402.dbcfs.persist.DbLoader
@@ -11,6 +12,7 @@ import fr.ct402.dbcfs.persist.model.GameVersion
 import fr.ct402.dbcfs.persist.model.GameVersions
 import fr.ct402.dbcfs.persist.model.GameVersion.Platform
 import fr.ct402.dbcfs.persist.model.GameVersion.BuildType
+import fr.ct402.dbcfs.persist.model.Profile
 import khttp.get
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.add
@@ -106,12 +108,14 @@ class DownloadApiService(
         notifier.success("Successfully synced game versions")
     }
 
-    private fun inferFileExtension(headers: Map<String, String>) = headers["Content-Disposition"]
+    private fun getFileNameFromHeader(headers: Map<String, String>) = headers["Content-Disposition"]
             ?.substringAfter("filename=", "")
-            ?.substringAfter('.', "")
-            ?.split('.')
-            ?.filter { it.all { it.isLetter() } && it != "" }
-            ?.reduce { acc, s -> "${acc}.${s}" }
+
+    private fun String.inferFileExtension() = this
+            .substringAfter('.', "")
+            .split('.')
+            .filter { it.all { it.isLetter() } && it != "" }
+            .reduce { acc, s -> "${acc}.${s}" }
 
     private fun extractArchive(path: String, extension: String, notifier: Notifier): Boolean {
         val folder = File(path)
@@ -138,6 +142,33 @@ class DownloadApiService(
         return true
     }
 
+    fun downloadToProfile(webPath: String, profile: Profile, notifier: Notifier? = null): String {
+        notifier?.update("Starting download...", force = true)
+        val res = get("$factorioDownloadUrl$webPath",
+                cookies = mapOf(Pair("session", config.factorio.cookie)),
+                stream = true
+        )
+        if (res.statusCode != 200) throw FactorioApiErrorException()
+        val fileName = getFileNameFromHeader(res.headers) ?: throw FactorioApiErrorException()
+        val size = res.headers["Content-Length"]?.toLong() ?: -1L
+
+        val destination = File("${profile.localPath}/$fileName").apply {
+            if (!createNewFile()) {
+                notifier?.error("Error, file already exists")
+                return fileName
+            }
+        }
+        var i = 0
+        for (chunk in res.contentIterator(1024)) {
+            destination.appendBytes(chunk)
+            if (++i % 1024 == 0)
+                notifier?.update("Downloading ${i / 1024}Mo" +
+                        if (size == -1L) "..." else " of ${size / 1048576 }Mo...")
+        }
+        notifier?.success("Download of $fileName complete")
+        return fileName
+    }
+
     fun downloadGameClient(webPath: String, localPath: String, notifier: Notifier): Boolean {
         val res = get("$factorioDownloadUrl$webPath",
                 cookies = mapOf(Pair("session", config.factorio.cookie)),
@@ -145,7 +176,7 @@ class DownloadApiService(
         )
         if (res.statusCode != 200) return false
 
-        val extension = inferFileExtension(res.headers) ?: return false
+        val extension = getFileNameFromHeader(res.headers)?.inferFileExtension() ?: return false
         logger.debug("Inferred file extension : $extension")
 
         val archive = File("$localPath.$extension")

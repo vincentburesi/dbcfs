@@ -16,7 +16,6 @@ import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.*
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Service
-import java.lang.Exception
 import kotlin.math.abs
 
 @Service

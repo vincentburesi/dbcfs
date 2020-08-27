@@ -36,6 +36,10 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
         }
         else -> null
     }
+    "get" -> when (it.nextOrNull()) {
+        "client" -> Command("Get game client download link for current profile, can specify platform (**win64 -default-**, win32, linux64, linux32 or osx)", CommandRunner::runGetClientCommand, 2)
+        else -> null
+    }
     "authorize" -> Command("Adds mentionned @user and @roles to allowed whitelist", CommandRunner::runAuthorizeCommand)
     "unauthorize" -> Command("Removes mentionned @user and @roles from allowed whitelist", CommandRunner::runUnauthorizeCommand)
     "start" -> Command("Starts server for current profile", CommandRunner::runStartCommand)

@@ -1,0 +1,6 @@
+.git
+.cache
+data
+**/*.class
+*.md
+!README*.md

@@ -40,6 +40,8 @@ class ProfileManager (
 
     fun getAllProfiles(): List<Profile> = profileSequence().toList()
     fun getAllGameReleases(): List<GameVersion> = gameReleaseSequence().toList()
+    fun getAllGameReleasesForProfile(profile: Profile): List<GameVersion> =
+            gameReleaseSequence().filter { it.versionNumber eq profile.gameVersion.versionNumber }.toList()
 
     private fun swapProfile(profile: Profile?) {
         currentProfile = profile
@@ -175,7 +177,7 @@ class ProfileManager (
         return true
     }
 
-    fun generateAuthToken(profile: Profile, notifier: Notifier? = null) {
+    fun generateAuthToken(profile: Profile) {
         logger.info("allowed chars $tokenAllowedChars")
         val now = LocalDateTime.now()
 
@@ -190,9 +192,8 @@ class ProfileManager (
 
     fun editProfileConfig(notifier: Notifier) {
         val profile = currentProfileOrThrow
-        generateAuthToken(profile, notifier)
-        notifier.success("You can edit your profile here : http://localhost:8080/edit/${profile.name}/${profile.token}\n" +
-                "*Links will be valid for the next $tokenValidityInMinutes minutes*")
+        generateAuthToken(profile)
+        notifier.success("You can edit your profile here : http://localhost:8080/edit/${profile.name}/${profile.token}\n$linkValidityMention")
     }
 
     fun listFiles(customFilter: (File) -> Boolean = { true }): List<String> {

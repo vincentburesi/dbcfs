@@ -7,6 +7,7 @@ import fr.ct402.dbcfs.manager.DiscordAuthManager
 import fr.ct402.dbcfs.manager.ModManager
 import fr.ct402.dbcfs.manager.ProcessManager
 import fr.ct402.dbcfs.manager.ProfileManager
+import fr.ct402.dbcfs.persist.model.GameVersion
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
@@ -49,7 +50,7 @@ class CommandRunner(
 
     fun runListFilesCommand(notifier: Notifier, args: List<String>) {
         val profile = profileManager.currentProfileOrThrow
-        profileManager.generateAuthToken(profile, notifier)
+        profileManager.generateAuthToken(profile)
         notifier.printProfileFiles(profileManager.listFiles(), profile, config.server.domain)
     }
 
@@ -68,6 +69,27 @@ class CommandRunner(
 
         modManager.removeAllModsFromProfile(profile, notifier)
         profileManager.removeProfile(profile, notifier)
+    }
+
+    fun runGetClientCommand(notifier: Notifier, args: List<String>) {
+        notifier.launchAsCoroutine {
+            val profile = profileManager.currentProfileOrThrow
+            val platform = when (args.firstOrNull()) {
+                "osx" -> GameVersion.Platform.OSX
+                "linux32" -> GameVersion.Platform.LINUX32
+                "linux", "linux64" -> GameVersion.Platform.LINUX64
+                "win32" -> GameVersion.Platform.WIN32
+                "win", "win64", null -> GameVersion.Platform.WIN64
+                else -> throw InvalidArgumentException("platform", "**win64 (default)**, win32, linux64, linux32, osx")
+            }
+            notifier.update("Searching for matching release...", force = true)
+            val release = profileManager.getAllGameReleasesForProfile(profile).find { it.platform == platform }
+                    ?: throw GameReleaseNotFoundException()
+
+            val fileName = downloadApiService.downloadToProfile(release.path, profile, notifier)
+            profileManager.generateAuthToken(profile)
+            notifier.printProfileFiles(listOf(fileName), profile, config.server.domain)
+        }
     }
 
     fun runAuthorizeCommand(notifier: Notifier, args: List<String>) =
@@ -180,11 +202,11 @@ class CommandRunner(
 
     fun runHelpCommand(notifier: Notifier, args: List<String>) {
         val msg = if (args.isEmpty()) {
-            "Usage: help <command>"
+            "Usage: help COMMAND"
         } else {
             getCommand(args.iterator())?.help ?: "Comand ${args.reduce { acc, s -> "$acc $s" }} not found"
         }
-        notifier.success(msg)
+        notifier.print(msg, force = true)
     }
 
     //FIXME Should be part of Notifier class

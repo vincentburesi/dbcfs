@@ -55,6 +55,7 @@ fun printDateTime(dateTime: LocalDateTime): String =
         dateTime.format(DateTimeFormatter.ISO_DATE_TIME)
 
 const val tokenValidityInMinutes = 60L
+const val linkValidityMention = "*Links will be valid for the next $tokenValidityInMinutes minutes*"
 const val tokenLength = 32
 val tokenAllowedChars = ('A'..'Z').joinToString("") + ('a'..'z').joinToString("") + ('0'..'9').joinToString("")
 
@@ -71,7 +72,9 @@ fun <R> Notifier.launchAsCoroutine(block: suspend () -> R) {
 class NoCurrentProfileException: RuntimeException("No profile is currently selected, please select or create a profile first (See create profile or swap)")
 class ProfileNotFoundException(name: String): RuntimeException("No profile found matching this name: $name")
 class MissingArgumentException(cmd: String, argName: String): RuntimeException("$cmd: Missing $argName argument")
+class InvalidArgumentException(argName: String, possibleValues: String): RuntimeException("$argName is invalid, possible values are $possibleValues")
 class MatchingVersionNotFound(version: String): RuntimeException("Could not find matching version for $version. Try to sync the server or check factorio version list")
 class FactorioApiErrorException(): RuntimeException("An error occured during the Factorio API calls")
 class ModNotFoundException(name: String): RuntimeException("No mod found matching this name: $name. Try to sync the server or check factorio mod portal")
+class GameReleaseNotFoundException(): RuntimeException("No matching game release was found")
 class ModReleaseNotFoundException(modName: String, version: String? = null): RuntimeException("No mod release found matching $modName${ if (version != null) " version $version" else "" }")
