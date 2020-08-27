@@ -1,0 +1,14 @@
+server:
+  port: 8080
+dbcfs:
+  discord:
+    token: DISCORD_BOT_TOKEN_HERE
+    owner: YOUR_DISCORD_USERNAME_HERE
+  db:
+    path: /mnt/index.sqlite
+  factorio:
+    username: YOUR_FACTORIO_USERNAME_HERE
+    token: YOUR_FACTORIO_AUTH_TOKEN_HERE (see https://wiki.factorio.com/Web_authentication_API)
+    cookie: YOUR_FACTORIO_WEBSITE_SESSION_COOKIE_HERE
+  server:
+    domain: http://my_domain_for_url_bases
