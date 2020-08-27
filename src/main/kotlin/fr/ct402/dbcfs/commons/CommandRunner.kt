@@ -8,6 +8,7 @@ import fr.ct402.dbcfs.manager.ModManager
 import fr.ct402.dbcfs.manager.ProcessManager
 import fr.ct402.dbcfs.manager.ProfileManager
 import fr.ct402.dbcfs.persist.model.GameVersion
+import kotlinx.coroutines.delay
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
@@ -248,18 +249,22 @@ class CommandRunner(
     }
 
     fun runTestCommand(notifier: Notifier, args: List<String>) {
-        val dateStr = args.firstOrNull()
-        if (dateStr != null) {
-            val date = LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME)
-            logger.info("Successfully parsed $date")
+        notifier.launchAsCoroutine {
+            notifier.update("Wait for it.", force = true)
+            delay(3_000L)
+            notifier.update("Wait for it..", force = true)
+            delay(3_000L)
+            notifier.update("Wait for it...", force = true)
+            delay(3_000L)
+            notifier.success("**It works!** :partying_face:")
         }
     }
 
     fun runHelpCommand(notifier: Notifier, args: List<String>) {
         val msg = if (args.isEmpty()) {
-            "Usage: help COMMAND"
+            listOfAvailableCommands
         } else {
-            getCommand(args.iterator())?.help ?: "Comand ${args.reduce { acc, s -> "$acc $s" }} not found"
+            ":small_blue_diamond: " + (getCommand(args.iterator())?.help ?: "Comand ${args.reduce { acc, s -> "$acc $s" }} not found")
         }
         notifier.print(msg, force = true)
     }
