@@ -98,9 +98,9 @@ class DownloadApiService(
             return
         }
 
-        notifier.update("Contacted Factorio WebSite, parsing...")
+        notifier.update("Contacted Factorio server, parsing...")
         val versions = parseDownloadLinks(res.text, latest.stable.alpha)
-        notifier.update("Contacted Factorio WebSite, Updating DB...")
+        notifier.update("Contacted Factorio server, Updating DB...")
         updateDb(versions)
         notifier.success("Successfully synced game versions")
     }
