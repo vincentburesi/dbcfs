@@ -5,19 +5,10 @@ This repository is only a POC (proof of concept) and will serve as a base to pro
 
 ## How to start the server
 
+- Make sure Docker is installed on the machine
+- Write the configuration file: `src/main/resources/application.yml` (you can use the example file in the same folder as base)
+- You can start the server using the `run.sh` file
+
 ## Features TODO list
 
-- [x] Discord interface
-- [x] Docker integration
-- [ ] Migration to docker-compose / docker through gradle ?
-- [x] Database setup
-    - [ ] Schema automatic setup
-- [x] Http request for API usage
-    - [ ] Mod API poc
-    - [x] Game client DL poc
-- [ ] HTML page service
-- [x] JSON Parsing and serializing
-    - [ ] JSON Versionning
-- [x] Service handling
-    - [ ] Parallel execution of multiple shards
-- [ ] Configuration example file
+Big refactor incoming to prepare the project for public release.
