@@ -8,6 +8,7 @@ import fr.ct402.dbcfs.refactor.manager.ModManager
 import fr.ct402.dbcfs.refactor.manager.ProcessManager
 import fr.ct402.dbcfs.refactor.manager.ProfileManager
 import fr.ct402.dbcfs.persist.model.GameVersion
+import fr.ct402.dbcfs.utilities.StellarisManager
 import kotlinx.coroutines.delay
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -21,6 +22,7 @@ class CommandRunner(
         val modPortalApiService: ModPortalApiService,
         val discordAuthManager: DiscordAuthManager,
         val modManager: ModManager,
+        val stellarisManager: StellarisManager,
         val config: Config,
 ) : AbstractComponent() {
 
@@ -244,6 +246,10 @@ class CommandRunner(
     fun runRevokeCommand(notifier: Notifier, args: List<String>) {
         val profile = profileManager.currentProfileOrThrow.apply { invalidateToken() }
         notifier.success("Successfully revoked token for **${profile.name}**, all related links are now invalid")
+    }
+
+    fun runGenerateStellarisBuildsCommand(notifier: Notifier, args: List<String>) {
+        stellarisManager.generateHumanBuilds(notifier.event.message, notifier)
     }
 
     fun runTestCommand(notifier: Notifier, args: List<String>) {

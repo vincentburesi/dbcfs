@@ -67,6 +67,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "test" -> Command("**test**\n*Used for test purposes*", CommandRunner::runTestCommand)
     "edit" -> Command("**edit**\n*Generate an edit link for active profile*", CommandRunner::runEditCommand)
     "revoke" -> Command("**revoke**\n*Cancels current profile authentication token (This will invalidate all related URLs)*", CommandRunner::runRevokeCommand)
+    "generate-stellaris-builds" -> Command("**generate-stellaris-builds __players__**\nThis will generate a Stellaris random build for everyone and display a rule reminder**", CommandRunner::runGenerateStellarisBuildsCommand)
     else -> null
 }
 
@@ -88,5 +89,6 @@ const val listOfAvailableCommands = """
 :small_blue_diamond: **remove file** *Remove server-side files*
 :small_blue_diamond: **update profile|mod|all** *Update versions*
 :small_blue_diamond: **revoke** *Cancel auth token*
+:small_blue_diamond: **generate-stellaris-builds** *Generate Stellaris builds for human games*
 :small_blue_diamond: **test** ||*Used for test purposes* :question::interrobang:||
 """
