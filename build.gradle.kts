@@ -23,7 +23,8 @@ dependencies {
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9")
 
 	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("org.springframework.boot:spring-boot-starter-mustache")
+//	implementation("org.springframework.boot:spring-boot-starter-mustache")
+	implementation("io.pebbletemplates:pebble-spring-boot-starter:3.1.4")
 	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {

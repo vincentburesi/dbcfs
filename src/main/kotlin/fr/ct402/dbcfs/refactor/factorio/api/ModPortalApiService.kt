@@ -6,11 +6,11 @@ import fr.ct402.dbcfs.refactor.commons.AbstractComponent
 import fr.ct402.dbcfs.refactor.commons.Config
 import fr.ct402.dbcfs.refactor.commons.FactorioApiErrorException
 import fr.ct402.dbcfs.refactor.discord.Notifier
-import fr.ct402.dbcfs.refactor.persist.DbLoader
-import fr.ct402.dbcfs.refactor.persist.model.Mod
-import fr.ct402.dbcfs.refactor.persist.model.ModRelease
-import fr.ct402.dbcfs.refactor.persist.model.ModReleases
-import fr.ct402.dbcfs.refactor.persist.model.Mods
+import fr.ct402.dbcfs.persist.DbLoader
+import fr.ct402.dbcfs.persist.model.Mod
+import fr.ct402.dbcfs.persist.model.ModRelease
+import fr.ct402.dbcfs.persist.model.ModReleases
+import fr.ct402.dbcfs.persist.model.Mods
 import khttp.get
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.*

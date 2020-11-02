@@ -4,8 +4,8 @@ import fr.ct402.dbcfs.refactor.commons.AbstractComponent
 import fr.ct402.dbcfs.refactor.discord.Notifier
 import fr.ct402.dbcfs.refactor.commons.factorioExecutableRelativeLocation
 import fr.ct402.dbcfs.refactor.commons.profileRelativeModDirectory
-import fr.ct402.dbcfs.refactor.persist.DbLoader
-import fr.ct402.dbcfs.refactor.persist.model.Profile
+import fr.ct402.dbcfs.persist.DbLoader
+import fr.ct402.dbcfs.persist.model.Profile
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.springframework.stereotype.Component

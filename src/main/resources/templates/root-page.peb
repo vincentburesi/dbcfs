@@ -1,0 +1,14 @@
+<html>
+<head>
+    <title>
+    {% block title %}
+        DBCFS
+    {% endblock %}
+    </title>
+</head>
+<body>
+    {% block body %}
+        *Sad developer noises*
+    {% endblock %}
+</body>
+</html>

@@ -1,4 +1,4 @@
-package fr.ct402.dbcfs.refactor.persist.model
+package fr.ct402.dbcfs.persist.model
 
 import me.liuwj.ktorm.entity.Entity
 import me.liuwj.ktorm.schema.*

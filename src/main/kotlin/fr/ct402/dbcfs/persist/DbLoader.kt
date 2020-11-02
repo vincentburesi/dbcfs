@@ -1,4 +1,4 @@
-package fr.ct402.dbcfs.refactor.persist
+package fr.ct402.dbcfs.persist
 
 import fr.ct402.dbcfs.refactor.commons.AbstractComponent
 import fr.ct402.dbcfs.refactor.commons.Config

@@ -3,10 +3,10 @@ package fr.ct402.dbcfs.refactor.manager
 import fr.ct402.dbcfs.refactor.commons.Config
 import fr.ct402.dbcfs.refactor.commons.orderAfterDbLoad
 import fr.ct402.dbcfs.refactor.discord.Notifier
-import fr.ct402.dbcfs.refactor.persist.DbLoader
-import fr.ct402.dbcfs.refactor.persist.model.AllowedId
-import fr.ct402.dbcfs.refactor.persist.model.AllowedId.IdType.*
-import fr.ct402.dbcfs.refactor.persist.model.AllowedIds
+import fr.ct402.dbcfs.persist.DbLoader
+import fr.ct402.dbcfs.persist.model.AllowedId
+import fr.ct402.dbcfs.persist.model.AllowedId.IdType.*
+import fr.ct402.dbcfs.persist.model.AllowedIds
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.add
 import me.liuwj.ktorm.entity.removeIf

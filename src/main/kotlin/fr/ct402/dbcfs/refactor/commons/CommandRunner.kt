@@ -1,6 +1,5 @@
 package fr.ct402.dbcfs.refactor.commons
 
-import fr.ct402.dbcfs.discord.*
 import fr.ct402.dbcfs.refactor.discord.*
 import fr.ct402.dbcfs.refactor.factorio.api.DownloadApiService
 import fr.ct402.dbcfs.refactor.factorio.api.ModPortalApiService
@@ -8,7 +7,7 @@ import fr.ct402.dbcfs.refactor.manager.DiscordAuthManager
 import fr.ct402.dbcfs.refactor.manager.ModManager
 import fr.ct402.dbcfs.refactor.manager.ProcessManager
 import fr.ct402.dbcfs.refactor.manager.ProfileManager
-import fr.ct402.dbcfs.refactor.persist.model.GameVersion
+import fr.ct402.dbcfs.persist.model.GameVersion
 import kotlinx.coroutines.delay
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent

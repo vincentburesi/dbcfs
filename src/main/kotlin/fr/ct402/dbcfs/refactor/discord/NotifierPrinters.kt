@@ -2,9 +2,9 @@ package fr.ct402.dbcfs.refactor.discord
 
 import fr.ct402.dbcfs.refactor.commons.fileSizeAsString
 import fr.ct402.dbcfs.refactor.commons.tokenValidityInMinutes
-import fr.ct402.dbcfs.refactor.persist.model.GameVersion
-import fr.ct402.dbcfs.refactor.persist.model.ModRelease
-import fr.ct402.dbcfs.refactor.persist.model.Profile
+import fr.ct402.dbcfs.persist.model.GameVersion
+import fr.ct402.dbcfs.persist.model.ModRelease
+import fr.ct402.dbcfs.persist.model.Profile
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.File

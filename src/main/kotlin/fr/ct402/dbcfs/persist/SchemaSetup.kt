@@ -1,13 +1,19 @@
-package fr.ct402.dbcfs.refactor.persist
+package fr.ct402.dbcfs.persist
 
 import fr.ct402.dbcfs.persist.model.*
-import fr.ct402.dbcfs.refactor.persist.model.*
 import me.liuwj.ktorm.database.Database
 import java.sql.SQLException
 
 fun setup(database: Database) {
-    arrayOf(gameVersionSchema, profileSchema, modSchema, modReleaseSchema, modReleaseProfileMappingSchema, allowedIdSchema)
-            .forEach { database.exec(it) }
+    arrayOf(
+            configSchema,
+            gameVersionSchema,
+            profileSchema,
+            modSchema,
+            modReleaseSchema,
+            modReleaseProfileMappingSchema,
+            allowedIdSchema,
+    ).forEach { database.exec(it) }
 }
 
 fun Database.exec(statement: String) {

@@ -25,6 +25,7 @@ I will try to keep a regular update schedule (about once a week) and will keep t
     - [X] Group Notifier and log system
     - [X] Use synchronous update in coroutine to avoid stacking the updates
     - [X] Separate status update from messages (to allow reuse of functions)
+- [ ] Moving from Mustache to Pebble to benefit from template inheritance and other cool stuff
 - [ ] Security overhaul
     - [ ] Pass on code and check for possible attacks
     - [ ] HTTPS support (Let's encrypt/Certbot integration ?)

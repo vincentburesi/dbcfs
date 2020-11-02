@@ -1,0 +1,7 @@
+{% extends '../root-page' %}
+{% block title %}Welcome to DBCFS{% endblock %}
+
+{% block body %}
+<h1>Welcome to DBCFS</h1>
+<p>Please setup your project!</p>
+{% endblock %}

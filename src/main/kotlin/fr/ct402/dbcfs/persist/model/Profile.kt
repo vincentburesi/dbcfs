@@ -1,4 +1,4 @@
-package fr.ct402.dbcfs.refactor.persist.model
+package fr.ct402.dbcfs.persist.model
 
 import fr.ct402.dbcfs.refactor.commons.parseDateTime
 import fr.ct402.dbcfs.refactor.commons.printDateTime

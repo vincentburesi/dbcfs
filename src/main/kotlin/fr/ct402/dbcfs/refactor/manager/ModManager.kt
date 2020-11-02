@@ -3,8 +3,9 @@ package fr.ct402.dbcfs.refactor.manager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import fr.ct402.dbcfs.refactor.commons.*
 import fr.ct402.dbcfs.refactor.factorio.api.ModPortalApiService
-import fr.ct402.dbcfs.refactor.persist.DbLoader
-import fr.ct402.dbcfs.refactor.persist.model.*
+import fr.ct402.dbcfs.persist.DbLoader
+import fr.ct402.dbcfs.persist.model.*
+import fr.ct402.dbcfs.refactor.commons.Config
 import fr.ct402.dbcfs.refactor.discord.Notifier
 import khttp.get
 import me.liuwj.ktorm.dsl.*
