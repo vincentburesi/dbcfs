@@ -24,7 +24,7 @@ class StellarisManager() {
             val userEthics = generateHumanBuild().reduce { acc, s -> "$acc - $s" }
             "${it.asMention}: ||$userEthics||"
         }.reduce { acc, s -> "$acc\n$s" }
-        val toSend = "**Builds aléatoires générés:**\n$userBuilds\n\n" +
+        val toSend = "__**Builds aléatoires générés:**__\n$userBuilds\n\n" +
                 """
                     __**Règles:**__
                     :small_blue_diamond: **Éthiques** *Prendre les éthiques choisies pour vous*
