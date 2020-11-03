@@ -1,6 +1,6 @@
 package fr.ct402.dbcfs.utilities
 
-import fr.ct402.dbcfs.refactor.discord.Notifier
+import fr.ct402.dbcfs.Notifier
 import net.dv8tion.jda.api.entities.Message
 import org.springframework.stereotype.Component
 
@@ -37,6 +37,6 @@ class StellarisManager() {
                     :small_blue_diamond: **Portrait d'espèce** Humain
                     :small_blue_diamond: **Drapeau / Lore** Inspiré de pays/régions existants
                 """.trimIndent()
-        notifier.success(toSend)
+        notifier.message(toSend)
     }
 }

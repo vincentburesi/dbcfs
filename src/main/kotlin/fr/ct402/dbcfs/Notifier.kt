@@ -14,7 +14,7 @@ class Notifier (
         const val intervalInSeconds = 3
     }
 
-    enum class Status(prefix: String) {
+    enum class Status(val prefix: String) {
         NO_PREFIX(""),
         SUCCESS(":green_circle:  "),
         ERROR(":red_circle:  "),
@@ -103,7 +103,7 @@ class Notifier (
 
     private suspend fun getFormattedMessage() =
             messageMutex.withLock {
-                "$status$message"
+                "${status.prefix}$message"
             }
 
     /**
