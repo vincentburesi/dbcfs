@@ -6,7 +6,10 @@ import fr.ct402.dbcfs.refactor.factorio.api.ModPortalApiService
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.*
 import fr.ct402.dbcfs.refactor.commons.Config
-import fr.ct402.dbcfs.refactor.discord.Notifier
+import fr.ct402.dbcfs.Notifier
+import fr.ct402.dbcfs.error
+import fr.ct402.dbcfs.running
+import fr.ct402.dbcfs.success
 import khttp.get
 import me.liuwj.ktorm.dsl.*
 import me.liuwj.ktorm.entity.*
@@ -49,7 +52,7 @@ class ModManager(
             this.profile = profile
         }
         modReleaseProfileMappingsSequence().add(modReleaseProfileMapping)
-        notifier.success("Successfully added **${modRelease.mod.name}** to **${profile.name}**")
+        notifier.success("Successfully added **${modRelease.mod.name}** to **${profile.name}**").queue()
     }
 
     fun addMod(notifier: Notifier, modName: String, exactVersion: String) {
@@ -60,7 +63,7 @@ class ModManager(
                 getModReleaseByVersionOrThrow(mod, exactVersion)
             } else this
         }
-        notifier.update("Found **${mod.name}** version **${modRelease.version}**...")
+        notifier.running("Found **${mod.name}** version **${modRelease.version}**...").queue()
         addMod(notifier, modRelease)
     }
 
@@ -72,7 +75,7 @@ class ModManager(
                 getLatestModReleaseOrThrow(mod)
             } else this
         }
-        notifier.update("Found **${mod.name}** version **${modRelease.version}**...")
+        notifier.running("Found **${mod.name}** version **${modRelease.version}**...").queue()
         addMod(notifier, modRelease)
     }
 
@@ -107,12 +110,12 @@ class ModManager(
                 modReleaseProfileMappingsSequence().removeIf { it.id eq entry.id }
             }
             if (!quiet)
-                notifier.success("Successfully removed **${mod.name}** from **${profile.name}**'s list of mods")
+                notifier.success("Successfully removed **${mod.name}** from **${profile.name}**'s list of mods").queue()
         }
     }
 
     fun removeAllModsFromProfile(profile: Profile, notifier: Notifier){
-        notifier.update("Removing profile related mods...", force = true)
+        notifier.running("Removing profile related mods...").queue()
         modReleaseProfileMappingsSequence().removeIf { it.profile eq profile.id }
     }
 
@@ -132,11 +135,12 @@ class ModManager(
         if (modList.isEmpty())
             return true
 
-        notifier.update("Retrieving mods...", force = true)
+        notifier.running("Retrieving mods...").queue()
         modList.forEachIndexed { index, modRelease ->
-            notifier.update("Retrieving mods ($index of ${modList.size})...")
-            val res = get(modDownloadUrl(modRelease), stream = true)
-            if (res.statusCode != 200) throw FactorioApiErrorException()
+            notifier.running("Retrieving mods ($index of ${modList.size})...").queue()
+            val downloadUrl = modDownloadUrl(modRelease)
+            val res = get(downloadUrl, stream = true)
+            if (res.statusCode != 200) throw FactorioApiErrorException("Received ${res.statusCode} from $downloadUrl")
 
             val file = File("${profile.localPath}/$profileRelativeModDirectory/${modRelease.fileName}")
             for (chunk in res.contentIterator(1024))
@@ -147,7 +151,7 @@ class ModManager(
         File("${profile.localPath}/$profileRelativeModDirectory/mod-list.json")
                 .writeText(jsonMapper.writeValueAsString(jsonModList))
 
-        notifier.success("Successfully downloaded mods")
+        notifier.success("Successfully downloaded mods").queue()
         return true
     }
 

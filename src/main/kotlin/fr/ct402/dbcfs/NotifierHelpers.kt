@@ -1,40 +1,44 @@
 package fr.ct402.dbcfs
 
 import fr.ct402.dbcfs.Notifier.Status.*
-import fr.ct402.dbcfs.refactor.discord.discordMessageLimit
+import fr.ct402.dbcfs.persist.model.ModRelease
+import fr.ct402.dbcfs.persist.model.Profile
+import fr.ct402.dbcfs.refactor.commons.tokenValidityInMinutes
+
+const val listPoint = ":small_blue_diamond:"
+const val discordMessageLimit = 2000
 
 /**
- * Adds given message to Notifier queue
- * Does not block, does not update status
+ * Prints running message
  */
-fun Notifier.print(msg: String) = message(msg).queue()
+fun Notifier.running(msg: String) = message(msg, RUNNING)
 
 /**
- * Set notifier status to success and flush. Blocking
+ * Prints success message
  */
-fun Notifier.success() = status(SUCCESS).flush()
+fun Notifier.success(msg: String) = message(msg, SUCCESS)
 
 /**
- * Prints error message. Blocking
+ * Prints error message and flush. Blocking
  */
-fun Notifier.error(msg: String) = message(msg, ERROR).flush()
+infix fun Notifier.error(msg: String) = message(msg, ERROR).flush()
 
 /**
- * Prints error message. Blocking
+ * Prints error message and flush. Blocking
  */
-fun Notifier.error(e: Exception) =
+infix fun Notifier.error(e: Exception) =
         error(e.message ?: "An unknown ${e.javaClass.simpleName} occurred, please check the logs for details")
 
 /**
- * Prints empty list message. Blocking
+ * Prints empty list message
  */
-fun Notifier.printEmpty() = message("*Empty*", NO_PREFIX).flush()
+fun Notifier.printEmpty() = message("*Empty*", NO_PREFIX)
 
 /**
  * Prints list of elements truncated for discord message size. Blocking
  */
 fun Notifier.printTruncatedList(list: List<String>) {
-    if (list.isEmpty()) return printEmpty()
+    if (list.isEmpty()) return printEmpty().queue()
     var cumulatedSize = 0
 
     list.takeWhile {
@@ -49,7 +53,7 @@ fun Notifier.printTruncatedList(list: List<String>) {
  * Blocking
  */
 fun Notifier.printFullList(list: List<String>) {
-    if (list.isEmpty()) return printEmpty()
+    if (list.isEmpty()) return printEmpty().queue()
     val toSend = arrayListOf<String>()
     var buffer = ""
 
@@ -75,4 +79,20 @@ fun Notifier.printFullList(list: List<String>) {
     toSend.forEach {
         event.channel.sendMessage(it).complete()
     }
+}
+
+fun Notifier.success(fileName: String, profile: Profile, domain: String) =
+        success("**$fileName** $domain/file/${profile.name}/${profile.token}/$fileName\n"
+                + "*Link will be valid for the next $tokenValidityInMinutes minutes*")
+
+
+fun Notifier.parseError() =
+        error("Could not parse your command : ${event.message.contentDisplay}")
+
+
+fun Notifier.printModReleases(list: List<ModRelease>, all: Boolean = false) {
+    val strings = list.map {
+        "$listPoint **${it.mod.name}** - ${it.version} - *${it.mod.summary}*"
+    }.reversed()
+    if (all) printFullList(strings) else printTruncatedList(strings)
 }

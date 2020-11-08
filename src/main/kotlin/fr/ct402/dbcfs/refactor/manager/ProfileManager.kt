@@ -8,13 +8,16 @@ import fr.ct402.dbcfs.refactor.factorio.config.ServerSettings
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.refactor.commons.Config
 import fr.ct402.dbcfs.refactor.commons.*
-import fr.ct402.dbcfs.refactor.discord.Notifier
+import fr.ct402.dbcfs.Notifier
+import fr.ct402.dbcfs.error
 import fr.ct402.dbcfs.persist.model.GameVersion
 import fr.ct402.dbcfs.persist.model.GameVersion.Platform
 import fr.ct402.dbcfs.persist.model.GameVersion.BuildType
 import fr.ct402.dbcfs.persist.model.GameVersions
 import fr.ct402.dbcfs.persist.model.Profile
 import fr.ct402.dbcfs.persist.model.Profiles
+import fr.ct402.dbcfs.running
+import fr.ct402.dbcfs.success
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.dsl.like
 import me.liuwj.ktorm.entity.*
@@ -83,7 +86,7 @@ class ProfileManager (
         checkNameAvailableOrThrow(name)
 
         val target = targetGameVersion ?: DownloadApiService.getLatestVersions().stable.headless
-        notifier.update("Attempting to create profile with target version $target")
+        notifier.running("Attempting to create profile with target version $target").queue()
         val profile = Profile().apply {
             this.name = name
             this.targetGameVersion = target
@@ -93,11 +96,11 @@ class ProfileManager (
         File("${profile.localPath}/$profileRelativeModDirectory").apply { if (!exists()) mkdirs() }
         profileSequence().add(profile)
         swapProfile(profile)
-        notifier.success("Profile **$name** successfully created with version **${profile.gameVersion.versionNumber}**")
+        notifier.success("Profile **$name** successfully created with version **${profile.gameVersion.versionNumber}**").queue()
     }
 
     fun copyProfile(name: String, oldProfile: Profile, notifier: Notifier) {
-        notifier.update("Starting profile copy...")
+        notifier.running("Starting profile copy...").queue()
         checkNameAvailableOrThrow(name)
         val newProfile = Profile().apply {
             this.name = name
@@ -115,7 +118,7 @@ class ProfileManager (
 
         profileSequence().add(newProfile)
         swapProfile(newProfile)
-        notifier.success("Profile **$name** successfully created as a copy of **${oldProfile.name}**")
+        notifier.success("Profile **$name** successfully created as a copy of **${oldProfile.name}**").queue()
     }
 
     fun updateProfile(
@@ -124,7 +127,7 @@ class ProfileManager (
             allowExperimental: Boolean = profile.allowExperimental,
             notifier: Notifier,
     ): Boolean {
-        notifier.update("Starting update...", force = true)
+        notifier.running("Starting update...").queue()
         val target = targetGameVersion ?: DownloadApiService.getLatestVersions().stable.headless
         if (target == profile.gameVersion.versionNumber) {
             notifier.success("Profile **${profile.name}** is already at version **$target**")
@@ -135,13 +138,13 @@ class ProfileManager (
             this.allowExperimental = allowExperimental
             this.gameVersion = getMatchingVersion(target) ?: throw MatchingVersionNotFound(target)
         }
-        notifier.update("Cleaning obsoletes files...")
+        notifier.running("Cleaning obsoletes files...").queue()
         File("${profile.localPath}/$profileRelativeModDirectory").apply {
             if (exists()) deleteRecursively()
             mkdirs()
         }
         File("${profile.localPath}/${profile.name}-modpack.zip").apply { if (exists()) delete() }
-        notifier.update("Successfully changed **${profile.name}**, running build to complete update...")
+        notifier.running("Successfully changed **${profile.name}**, running build to complete update...").queue()
         return true
     }
 
@@ -153,7 +156,7 @@ class ProfileManager (
         if (processManager.currentProcessProfileName == profile.name) processManager.stop()
         profileSequence().removeIf { it.id eq profile.id }
         File(profile.localPath).apply { if (exists()) deleteRecursively() }
-        notifier.success("Profile **${profile.name}** successfully removed")
+        notifier.success("Profile **${profile.name}** successfully removed").queue()
     }
 
     private fun getMatchingVersion(approxVersion: String,
@@ -188,10 +191,10 @@ class ProfileManager (
 
 
         if (version.localPath != null) {
-            notifier.success("Game version already downloaded")
+            notifier.success("Game version already downloaded").queue()
             return true
         } else
-            notifier.update("Starting download for **${version.versionNumber}**...", force = true)
+            notifier.running("Starting download for **${version.versionNumber}**...").queue()
 
         val destination = File("$baseDataDir/bin/${version.versionNumber}")
         destination.mkdirs()
@@ -250,12 +253,12 @@ class ProfileManager (
         val fileName = "${profile.name}-modpack.zip"
         val archive = File("${profile.localPath}/$fileName").apply {
             if (exists()) {
-                notifier.update("Removing old archive...", force = true)
+                notifier.running("Removing old archive...").queue()
                 delete()
             }
         }.name
         val cmd = arrayOf("zip", "-r", archive, modFolder, "-x", "$modFolder/mod-settings.dat")
-        notifier.update("Creating archive...")
+        notifier.running("Creating archive...").queue()
         logger.warn("CMD: ${cmd.joinToString(" ")}")
 
         val p = Runtime.getRuntime().exec(cmd, null, File(profile.localPath))
@@ -266,14 +269,15 @@ class ProfileManager (
             logger.error("\n" + p.inputStream.bufferedReader().use { it.readText() })
             logger.error("\n" + p.errorStream.bufferedReader().use { it.readText() })
         } else
-            notifier.success("Extraction successful")
+            notifier.success("Extraction successful").queue()
         return fileName
     }
 
     fun editProfileConfig(notifier: Notifier) {
         val profile = currentProfileOrThrow
         generateAuthToken(profile)
-        notifier.success("You can edit your profile here : ${config.server.domain}/edit/${profile.name}/${profile.token}\n$linkValidityMention")
+        notifier.success("You can edit your profile here : " +
+                "${config.server.domain}/edit/${profile.name}/${profile.token}\n$linkValidityMention").queue()
     }
 
     fun listFiles(customFilter: (File) -> Boolean = { true }): List<File> {
@@ -288,7 +292,7 @@ class ProfileManager (
         val file = File(profile.localPath + "/$fileName")
         if (file.exists()) {
             file.delete()
-            notifier.success("Successfully removed file **$fileName**")
+            notifier.success("Successfully removed file **$fileName**").queue()
         } else {
             notifier.error("Could not remove **$fileName**, file doesn't exist")
         }

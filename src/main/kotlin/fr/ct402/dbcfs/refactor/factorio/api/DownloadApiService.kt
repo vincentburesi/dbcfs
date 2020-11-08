@@ -3,13 +3,16 @@ package fr.ct402.dbcfs.refactor.factorio.api;
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import fr.ct402.dbcfs.refactor.commons.*
-import fr.ct402.dbcfs.refactor.discord.Notifier
+import fr.ct402.dbcfs.Notifier
+import fr.ct402.dbcfs.error
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.GameVersion
 import fr.ct402.dbcfs.persist.model.GameVersions
 import fr.ct402.dbcfs.persist.model.GameVersion.Platform
 import fr.ct402.dbcfs.persist.model.GameVersion.BuildType
 import fr.ct402.dbcfs.persist.model.Profile
+import fr.ct402.dbcfs.running
+import fr.ct402.dbcfs.success
 import khttp.get
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.add
@@ -87,7 +90,7 @@ class DownloadApiService(
     }
 
     fun syncGameVersions(notifier: Notifier) {
-        notifier.update("Starting game version sync...", force = true)
+        notifier.running("Starting game version sync...").queue()
         val latest = getLatestVersions()
         val res = get("https://www.factorio.com/download/archive",
                 cookies = mapOf(Pair("session", config.factorio.cookie))
@@ -98,11 +101,11 @@ class DownloadApiService(
             return
         }
 
-        notifier.update("Contacted Factorio server, parsing...")
+        notifier.running("Contacted Factorio server, parsing...").queue()
         val versions = parseDownloadLinks(res.text, latest.stable.alpha)
-        notifier.update("Contacted Factorio server, Updating DB...")
+        notifier.running("Contacted Factorio server, Updating DB...").queue()
         updateDb(versions)
-        notifier.success("Successfully synced game versions")
+        notifier.success("Successfully synced game versions").flush()
     }
 
     private fun getFileNameFromHeader(headers: Map<String, String>) = headers["Content-Disposition"]
@@ -134,19 +137,28 @@ class DownloadApiService(
             logger.error("\n" + p.errorStream.bufferedReader().use { it.readText() })
             return false
         } else
-            notifier.success("Extraction successful")
+            notifier.success("Extraction successful").queue()
         archive.delete()
         return true
     }
 
     fun downloadToProfile(webPath: String, profile: Profile, notifier: Notifier? = null): String {
-        notifier?.update("Starting download...", force = true)
-        val res = get("$factorioDownloadUrl$webPath",
+        val downloadUrl = "$factorioDownloadUrl$webPath"
+        notifier?.running("Starting download from $downloadUrl...")?.queue()
+
+        val res = get(downloadUrl,
                 cookies = mapOf(Pair("session", config.factorio.cookie)),
                 stream = true
         )
-        if (res.statusCode != 200) throw FactorioApiErrorException()
-        val fileName = getFileNameFromHeader(res.headers) ?: throw FactorioApiErrorException()
+
+        if (res.statusCode != 200) {
+            logger.error("downloadToProfile: Received ${res.statusCode} from $downloadUrl, details below:\n" +
+                    res.content)
+            throw FactorioApiErrorException("Received ${res.statusCode} from $downloadUrl")
+        }
+
+        val fileName = getFileNameFromHeader(res.headers)
+                ?: throw FactorioApiErrorException("Could not read filename from headers")
         val size = res.headers["Content-Length"]?.toLong() ?: -1L
 
         val destination = File("${profile.localPath}/$fileName").apply {
@@ -155,14 +167,16 @@ class DownloadApiService(
                 return fileName
             }
         }
+
         var i = 0
         for (chunk in res.contentIterator(1024)) {
             destination.appendBytes(chunk)
             if (++i % 1024 == 0)
-                notifier?.update("Downloading ${fileSizeAsString(i.toLong() * 1024)}" +
-                        if (size == -1L) "..." else " of ${fileSizeAsString(size)}...")
+                notifier?.running("Downloading ${fileSizeAsString(i.toLong() * 1024)}" +
+                        if (size == -1L) "..." else " of ${fileSizeAsString(size)}...")?.queue()
         }
-        notifier?.success("Download of **$fileName** complete")
+
+        notifier?.success("Download of **$fileName** complete")?.queue()
         return fileName
     }
 
@@ -183,7 +197,7 @@ class DownloadApiService(
 
         for (chunk in res.contentIterator(1024))
             archive.appendBytes(chunk)
-        notifier.update("Download complete, extracting files...")
+        notifier.running("Download complete, extracting files...").queue()
 
         return extractArchive(localPath, extension, notifier)
     }

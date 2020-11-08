@@ -1,6 +1,6 @@
 package fr.ct402.dbcfs.refactor.commons
 
-import fr.ct402.dbcfs.refactor.discord.Notifier
+import fr.ct402.dbcfs.Notifier
 
 class Command(val help: String, val run: CommandRunner.(Notifier, List<String>) -> Unit, val depthLevel: Int = 1) {
     operator fun invoke(receiver: CommandRunner, notifier: Notifier, args: List<String>) = receiver.run(notifier, args)

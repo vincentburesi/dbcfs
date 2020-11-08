@@ -55,7 +55,8 @@ class Notifier (
     }
 
     /**
-     * Changes the message content and status
+     * Changes the message content and status.
+     * You should avoid using this and use NotifierHelpers instead
      * Should be followed by [queue] or [flush]
      */
     fun message(str: String, status: Status? = null): Notifier {

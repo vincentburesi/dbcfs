@@ -2,11 +2,13 @@ package fr.ct402.dbcfs.refactor.manager
 
 import fr.ct402.dbcfs.refactor.commons.Config
 import fr.ct402.dbcfs.refactor.commons.orderAfterDbLoad
-import fr.ct402.dbcfs.refactor.discord.Notifier
+import fr.ct402.dbcfs.Notifier
+import fr.ct402.dbcfs.error
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.AllowedId
 import fr.ct402.dbcfs.persist.model.AllowedId.IdType.*
 import fr.ct402.dbcfs.persist.model.AllowedIds
+import fr.ct402.dbcfs.success
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.add
 import me.liuwj.ktorm.entity.removeIf
@@ -149,9 +151,10 @@ class DiscordAuthManager (
         }
 
         if (ignored.isEmpty())
-            notifier.success("Allowed all properly mentioned users, roles and channels")
+            notifier.success("Allowed all properly mentioned users, roles and channels").queue()
         else
-            notifier.error("Following users, roles and channels are already allowed and were ignored: ${ ignored.reduce { acc, s -> "$acc, $s" } }")
+            notifier.error("Following users, roles and channels are already allowed and were ignored: " +
+                    ignored.reduce { acc, s -> "$acc, $s" })
     }
 
     fun disallowFromMentions(message: Message, notifier: Notifier) {
@@ -171,9 +174,10 @@ class DiscordAuthManager (
         }
 
         if (ignored.isEmpty())
-            notifier.success("Removed all properly mentioned users, roles and channels from allowed list")
+            notifier.success("Removed all properly mentioned users, roles and channels from allowed list").queue()
         else
-            notifier.error("Following users, roles and channels were not in allowed list: ${ ignored.reduce { acc, s -> "$acc, $s" } }")
+            notifier.error("Following users, roles and channels were not in allowed list: " +
+                    ignored.reduce { acc, s -> "$acc, $s" })
     }
 
 }

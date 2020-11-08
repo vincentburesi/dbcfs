@@ -5,12 +5,14 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import fr.ct402.dbcfs.refactor.commons.AbstractComponent
 import fr.ct402.dbcfs.refactor.commons.Config
 import fr.ct402.dbcfs.refactor.commons.FactorioApiErrorException
-import fr.ct402.dbcfs.refactor.discord.Notifier
+import fr.ct402.dbcfs.Notifier
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.Mod
 import fr.ct402.dbcfs.persist.model.ModRelease
 import fr.ct402.dbcfs.persist.model.ModReleases
 import fr.ct402.dbcfs.persist.model.Mods
+import fr.ct402.dbcfs.running
+import fr.ct402.dbcfs.success
 import khttp.get
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.*
@@ -33,22 +35,22 @@ class ModPortalApiService(
     fun factorioModDetailUrl(modName: String) = "http://mods.factorio.com/api/mods/$modName/full"
 
     fun syncModList(notifier: Notifier): Boolean {
-        notifier.update("Starting mod versions sync...", force = true)
+        notifier.running("Starting mod versions sync...").queue()
         val modList = retrieveModList(notifier)?.sanitize() ?: return false
         val existingMods = modSequence().toList()
-        notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)...")
+        notifier.running("${modList.size} mods retrieved, updating DB (this might take some time)...").queue()
         updateDb(modList, existingMods, notifier)
-        notifier.success("Successfully synced mod versions")
+        notifier.success("Successfully synced mod versions").queue()
         return true
     }
 
     fun syncModReleaseList(mod: Mod, notifier: Notifier? = null) {
-        notifier?.update("Fetching releases for ${mod.name}...", force = true)
+        notifier?.running("Fetching releases for ${mod.name}...")?.queue()
         val releases = retrieveModReleaseList(mod)
         val existings = modReleaseSequence().filter { it.mod eq mod.id }.toList()
 
         updateModReleasesDb(mod, releases, existings, notifier)
-        notifier?.success("Successfully updated mod release list")
+        notifier?.success("Successfully updated mod release list")?.queue()
     }
 
     //region syncModList internals
@@ -59,7 +61,7 @@ class ModPortalApiService(
             var count = 1
             var acc: MutableList<Result> = arrayListOf()
             while (++i <= count) {
-                notifier.update("Obtaining page $i of $count (page size: $pageSize, starting at ${(i - 1) * pageSize})...")
+                notifier.running("Obtaining page $i of $count (page size: $pageSize, starting at ${(i - 1) * pageSize})...").queue()
                 val res = get(factorioModPortalUrl(i, pageSize))
                 if (res.statusCode != 200) {
                     logger.error("Error: Mod API returned error status code for : ${factorioModPortalUrl(i, pageSize)}")
@@ -72,7 +74,7 @@ class ModPortalApiService(
             return acc
         } catch (e: Exception) {
             logger.error("Error during modList retrieval : ${e.message}")
-            throw FactorioApiErrorException()
+            throw FactorioApiErrorException("Error during modList retrieval : ${e.message}")
         }
     }
 
@@ -83,8 +85,8 @@ class ModPortalApiService(
                 val existing = existingMods.find { it.name == mod.name }
                 buildDbEntry(mod, existing)?.updateOrAdd(existing == null)
                 if (index % 20 == 0)
-                    notifier.update("${modList.size} mods retrieved, updating DB (this might take some time)..." +
-                            " ${ (index * 100) / modList.size }%")
+                    notifier.running("${modList.size} mods retrieved, updating DB (this might take some time)..." +
+                            " ${ (index * 100) / modList.size }%").queue()
             }
 
     // Only updates the DB when the mod has changed in a significant way
@@ -122,17 +124,18 @@ class ModPortalApiService(
 
     //region syncModReleaseList internals
     private fun retrieveModReleaseList(mod: Mod): List<ModDetailRelease> {
-        val res = get(factorioModDetailUrl(mod.name))
+        val downloadUrl = factorioModDetailUrl(mod.name)
+        val res = get(downloadUrl)
         if (res.statusCode != 200) {
-            logger.error("Error: Mod Detail API returned error status code for : ${factorioModDetailUrl(mod.name)}")
-            throw FactorioApiErrorException()
+            logger.error("Error: retrieveModReleaseList received ${res.statusCode} from $downloadUrl")
+            throw FactorioApiErrorException("Received ${res.statusCode} from $downloadUrl")
         }
         return jsonMapper.readValue<ModDetail>(res.text).releases
     }
 
     private fun updateModReleasesDb(mod: Mod, releases: List<ModDetailRelease>, existingReleases: List<ModRelease>, notifier: Notifier? = null) =
             releases.forEachIndexed { index, release ->
-                notifier?.update("Adding modRelease $index of ${releases.size}...")
+                notifier?.running("Adding modRelease $index of ${releases.size}...")?.queue()
                 val existing = existingReleases.find { it.downloadUrl == release.download_url }
                 buildDbEntry(mod, release, existing)?.updateOrAdd(existing == null)
             }

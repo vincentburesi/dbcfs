@@ -1,11 +1,14 @@
 package fr.ct402.dbcfs.refactor.manager
 
 import fr.ct402.dbcfs.refactor.commons.AbstractComponent
-import fr.ct402.dbcfs.refactor.discord.Notifier
+import fr.ct402.dbcfs.Notifier
+import fr.ct402.dbcfs.error
 import fr.ct402.dbcfs.refactor.commons.factorioExecutableRelativeLocation
 import fr.ct402.dbcfs.refactor.commons.profileRelativeModDirectory
 import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.Profile
+import fr.ct402.dbcfs.running
+import fr.ct402.dbcfs.success
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.springframework.stereotype.Component
@@ -22,7 +25,7 @@ class ProcessManager (
     final var currentProcessProfileName: String? = null; private set
 
     suspend fun start(profile: Profile, notifier: Notifier, save: String? = null) {
-        notifier.update("Starting server...", force = true)
+        notifier.running("Starting server...").queue()
         val factorioPath = profile.gameVersion.localPath ?: throw IllegalStateException("Cannot start server, game has not been downloaded")
         val saveName = save ?: "map.zip"
         val cmd = arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
@@ -41,7 +44,7 @@ class ProcessManager (
             if (success) {
                 currentProcess = p
                 currentProcessProfileName = profile.name
-                notifier.success("Server successfully started")
+                notifier.success("Server successfully started").queue()
             } else {
                 val output = p.inputStream.bufferedReader().use { it.readText() }
                 notifier.error("Failed to start server, see logs for details\n```\n...${output.takeLast(1500)}\n```\n")
@@ -55,7 +58,7 @@ class ProcessManager (
         val factorioPath = profile.gameVersion.localPath
         val mapPath = "${profile.localPath}/map.zip"
         if (File(mapPath).exists()) {
-            notifier.success("Map already exists, skipped. To rebuild the map, use remove file first")
+            notifier.success("Map already exists, skipped. To rebuild the map, use remove file first").queue()
             return true
         }
 
@@ -63,7 +66,7 @@ class ProcessManager (
             notifier.error("Cannot build map, game has not been downloaded")
             return false
         } else
-            notifier.update("Building map...", force = true)
+            notifier.running("Building map...").queue()
 
         val p = Runtime.getRuntime().exec(arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
                 "--create", mapPath,
@@ -74,7 +77,7 @@ class ProcessManager (
         ))
 
         return if (p.waitFor() == 0) {
-            notifier.success("Map is ready, you can start the server")
+            notifier.success("Map is ready, you can start the server").queue()
             true
         } else {
             val output = p.inputStream.bufferedReader().use { it.readText() }

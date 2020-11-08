@@ -1,6 +1,7 @@
 package fr.ct402.dbcfs.refactor.commons
 
-import fr.ct402.dbcfs.refactor.discord.Notifier
+import fr.ct402.dbcfs.Notifier
+import fr.ct402.dbcfs.error
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
@@ -73,7 +74,7 @@ fun <R> Notifier.launchAsCoroutine(block: suspend () -> R) {
         try {
             block()
         } catch (e: Exception) {
-            this@launchAsCoroutine print e
+            this@launchAsCoroutine error e
         }
     }
 }
@@ -84,7 +85,7 @@ class ProfileNameNotAvailableException(name: String): RuntimeException("A profil
 class MissingArgumentException(cmd: String, argName: String): RuntimeException("$cmd: Missing $argName argument")
 class InvalidArgumentException(argName: String, possibleValues: String): RuntimeException("$argName is invalid, possible values are $possibleValues")
 class MatchingVersionNotFound(version: String): RuntimeException("Could not find matching version for $version. Try to sync the server or check factorio version list")
-class FactorioApiErrorException(): RuntimeException("An error occured during the Factorio API calls")
+class FactorioApiErrorException(msg: String): RuntimeException("An error occured during the Factorio API calls - $msg")
 class ModNotFoundException(name: String): RuntimeException("No mod found matching this name: $name. Try to sync the server or check factorio mod portal")
 class GameReleaseNotFoundException(): RuntimeException("No matching game release was found")
 class ModReleaseNotFoundException(modName: String, version: String? = null): RuntimeException("No mod release found matching $modName${ if (version != null) " version $version" else "" }")
