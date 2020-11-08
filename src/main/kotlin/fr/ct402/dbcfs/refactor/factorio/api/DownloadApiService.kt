@@ -60,6 +60,8 @@ class DownloadApiService(
             versionLinks.add(html.takeWhile { it != '"' })
         }
 
+        logger.info(versionLinks.reduce { acc, s -> "$acc\n$s" })
+
         return versionLinks.mapNotNull(fun(path): GameVersion? {
             val parts = path.split('/')
 
