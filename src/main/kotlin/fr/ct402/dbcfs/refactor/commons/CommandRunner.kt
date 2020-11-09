@@ -304,10 +304,10 @@ class CommandRunner(
     companion object {
         fun notImplemented(notifier: Notifier) =
                 notifier.error("Feature not implemented yet : ${notifier.event.message.contentDisplay}")
-
-        fun removePrefix(str: String) =
-                if (str.startsWith(commandPrefix)) str.drop(commandPrefix.length) else null
     }
+
+    fun removePrefix(str: String) =
+            if (str.startsWith(config.discord.commandPrefix)) str.drop(config.discord.commandPrefix.length) else null
 
     fun parseCommand(event: MessageReceivedEvent) {
         logger.info("Parsing command: ${event.message.contentRaw}")

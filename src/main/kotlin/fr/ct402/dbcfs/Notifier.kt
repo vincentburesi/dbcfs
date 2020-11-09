@@ -11,7 +11,7 @@ class Notifier (
         val event: MessageReceivedEvent,
 ) {
     companion object {
-        const val intervalInSeconds = 3
+        const val intervalInSeconds = 3 // FIXME Use Config variable instead
     }
 
     enum class Status(val prefix: String) {

@@ -6,8 +6,6 @@ class Command(val help: String, val run: CommandRunner.(Notifier, List<String>) 
     operator fun invoke(receiver: CommandRunner, notifier: Notifier, args: List<String>) = receiver.run(notifier, args)
 }
 
-const val commandPrefix = "."
-
 fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "help" -> Command("**help** __other command__\n*Print other commands usage*\nSyntax: **command** __argument__ [__optional_argument__] litteral_value possible|values", CommandRunner::runHelpCommand)
     "create" -> when (it.nextOrNull()) {

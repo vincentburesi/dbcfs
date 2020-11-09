@@ -14,6 +14,8 @@ data class Config (
     data class DiscordConfig (
             val token: String,
             val owner: String,
+            val commandPrefix: String,
+            val intervalInSeconds: Int,
     )
 
     data class FactorioConfig (
