@@ -39,7 +39,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
         else -> null
     }
     "get" -> when (it.nextOrNull()) {
-        "client" -> Command("**get client** [win|win64|win32|linux|linux64|linux32|osx]\n*Obtain game client download link for active profile and target platform (win64 by default)*", CommandRunner::runGetClientCommand, 2)
+        "client" -> Command("**get client** [win|win64|win32|linux|linux64|linux32|osx] [alpha|headless]\n*Obtain game client download link for active profile and target platform/build type (win64 and alpha by default)*", CommandRunner::runGetClientCommand, 2)
         "mods" -> Command("**get mods**\n*Obtain archive download link with all mods associated with active profile*", CommandRunner::runGetModPackCommand, 2)
         else -> null
     }

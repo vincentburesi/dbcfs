@@ -110,8 +110,16 @@ class CommandRunner(
                 "win", "win64", null -> GameVersion.Platform.WIN64
                 else -> throw InvalidArgumentException("platform", "**win64 (default)**, win32, linux64, linux32, osx")
             }
+            val buildType = when(args.getOrNull(1)) {
+                "headless" -> GameVersion.BuildType.HEADLESS
+                "alpha", null -> GameVersion.BuildType.ALPHA
+                else -> throw InvalidArgumentException("buildType", "**alpha (default)**, headless")
+            }
+
             notifier.running("Searching for matching release...").queue()
-            val release = profileManager.getAllGameReleasesForProfile(profile).find { it.platform == platform }
+            val release = profileManager.getAllGameReleasesForProfile(profile)
+                    .filter { it.buildType == buildType }
+                    .find { it.platform == platform }
                     ?: throw GameReleaseNotFoundException()
 
             val fileName = downloadApiService.downloadToProfile(release.path, profile, notifier)
