@@ -1,0 +1,7 @@
+{% extends '../base-page' %}
+
+{% block title %}{{ profile.name }}{% endblock %}
+
+{% block body %}
+{% include './menu' %}
+{% endblock %}

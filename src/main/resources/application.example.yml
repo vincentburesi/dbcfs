@@ -1,9 +1,14 @@
 server:
   port: 8080
+pebble:
+  prefix: templates/
+  suffix: .peb
 dbcfs:
   discord:
     token: DISCORD_BOT_TOKEN_HERE
     owner: YOUR_DISCORD_USERNAME_HERE
+    commandPrefix: .
+    intervalInSeconds: 3  # FIXME Not used yet (Should replace const val in Notifier companion object)
   db:
     path: /mnt/index.sqlite
   factorio:

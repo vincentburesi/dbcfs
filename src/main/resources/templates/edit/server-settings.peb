@@ -1,24 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8" />
-    <title>{{profile.name}} - Server settings</title>
-    <script type="text/javascript" src="/jsoneditor.js"></script>
-    <link rel='stylesheet' href='https://cdn.jsdelivr.net/foundation/5.0.2/css/foundation.min.css'>
-    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.0.3/css/font-awesome.css'>
-</head>
-<body>
-{{>edit-summary}}
-<h1>Editing {{profile.name}} server settings</h1>
-<div class="row">
-    <div id='editor_holder' class='medium-12 columns'></div>
-</div>
-<button id='submit'>Apply</button>
+{% extends './base-page' %}
+
+{% block page_title %}Server settings{% endblock %}
+
+{% block schema %}
 <script type="text/javascript">
-    JSONEditor.defaults.theme = 'foundation5';
-    JSONEditor.defaults.iconlib = 'fontawesome4';
-    // Initialize the editor with a JSON schema
-    let editor = new JSONEditor(document.getElementById('editor_holder'),{
+    let schema = {
         schema: {
             type: "object",
             title: "Server settings",
@@ -195,8 +181,6 @@
             ],
             "additionalProperties": true
         }
-    });
+    }
 </script>
-{{>edit-settings-post-script}}
-</body>
-</html>
+{% endblock %}

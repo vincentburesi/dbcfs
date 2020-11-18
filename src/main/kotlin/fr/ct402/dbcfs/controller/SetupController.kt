@@ -19,7 +19,7 @@ class SetupController {
     val logger = getLogger()
 
     @GetMapping("/")
-    fun getHome(model: Model): String {
+    fun getHome(model: Model): String { //FIXME Major feature : Add setup through controller
         logger.warn("SetupController::getHome()")
         model["name"] = "Vincent"
         model["age"] = 28

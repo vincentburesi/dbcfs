@@ -27,7 +27,7 @@ class ConfigController (
 
         model["profile"] = profile
         model["authToken"] = authToken
-        return "edit-index"
+        return "edit/index"
     }
 
     fun postSettings(profileName: String, authToken: String, settings: Any): ResponseEntity<Nothing> {
@@ -69,7 +69,7 @@ class ConfigController (
 
         model["profile"] = profile
         model["authToken"] = authToken
-        return "edit-server-settings"
+        return "edit/server-settings"
     }
 
     @GetMapping("/{profileName}/map-settings/{authToken}")
@@ -80,7 +80,7 @@ class ConfigController (
 
         model["profile"] = profile
         model["authToken"] = authToken
-        return "edit-map-settings"
+        return "edit/map-settings"
     }
 
     @GetMapping("/{profileName}/map-gen-settings/{authToken}")
@@ -91,7 +91,7 @@ class ConfigController (
 
         model["profile"] = profile
         model["authToken"] = authToken
-        return "edit-map-gen-settings"
+        return "edit/map-gen-settings"
     }
 
     @GetMapping("/{profileName}/revoke/{authToken}")

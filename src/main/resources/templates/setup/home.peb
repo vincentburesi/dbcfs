@@ -3,5 +3,5 @@
 
 {% block body %}
 <h1>Welcome to DBCFS</h1>
-<p>Please setup your project!</p>
+<p>To be reworked into auth through templates system</p>
 {% endblock %}

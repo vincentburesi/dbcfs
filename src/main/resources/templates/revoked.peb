@@ -1,0 +1,7 @@
+{% extends 'base-page' %}
+
+{% block title %}{{profile.name}} disconnected{% endblock %}
+
+{% block body %}
+<p>You have been successfully disconnected and can now close this page</p>
+{% endblock %}
