@@ -36,7 +36,7 @@ class MapSettings (
             var pollution_with_max_forest_damage: Int = 150,
             var pollution_per_tree_damage: Int = 50,
             var pollution_restored_per_tree_damage: Int = 10,
-            var max_pollution_to_restore_tree: Int = 20,
+            var max_pollution_to_restore_trees: Int = 20,
             var enemy_attack_pollution_consumption_modifier: Int = 1
     )
 
