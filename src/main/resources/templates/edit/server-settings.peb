@@ -18,7 +18,7 @@
                 description: {
                     type: "string",
                     description: "Description of the game that will appear in the listing",
-                    default: ""
+                    default: "Generated with DBCFS - Check it out on GitHub ;)"
                 },
                 tags: {
                     type: "array",
@@ -36,8 +36,8 @@
                 visibility: {
                     type: "object",
                     default: {
-                        public: true,
-                        lan: true
+                        public: false,
+                        lan: false
                     },
                     properties: {
                         public: {
@@ -63,7 +63,8 @@
                     description: "Authentication token. May be used instead of 'password' above."
                 },
                 game_password: {
-                    type: "string"
+                    type: "string",
+                    description: "Server access password, leave empty for no password"
                 },
                 require_user_verification: {
                     type: "boolean",
@@ -122,13 +123,13 @@
                 },
                 autosave_only_on_server: {
                     type: "boolean",
-                    description: "Whether autosaves should be saved only on server or also on all connected clients. Default is true.",
+                    description: "Whether autosaves should be saved only on server or also on all connected clients. Default is only on server.",
                     default: true
                 },
                 non_blocking_saving: {
                     type: "boolean",
                     description: "Highly experimental feature, enable only at your own risk of losing your saves. On UNIX systems, server will fork itself to create an autosave. Autosaving on connected Windows clients will be disabled regardless of autosave_only_on_server option.",
-                    default: true
+                    default: false
                 },
                 minimum_segment_size: {
                     type: "number",

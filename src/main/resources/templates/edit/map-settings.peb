@@ -106,7 +106,7 @@
                         },
                         pollution_factor: {
                             type: "number",
-                            default: 9e-7
+                            default: 0.0000009
                         }
                     }
                 },

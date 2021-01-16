@@ -102,7 +102,7 @@
                     properties: {
                         elevation: {
                             type: "string",
-                            default: "0_17-island"
+                            default: ""
                         },
                         "control-setting:aux:bias": {
                             type: "string",
