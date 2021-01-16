@@ -76,7 +76,7 @@ class DiscordAuthManager (
                 idType = type
             }
 
-    private fun getAllowedIdList(type: AllowedId.IdType) = when (type) {
+    fun getAllowedIdList(type: AllowedId.IdType) = when (type) {
         USER -> allowedUserIds
         ROLE -> allowedRoleIds
         CHANNEL -> allowedChannelIds

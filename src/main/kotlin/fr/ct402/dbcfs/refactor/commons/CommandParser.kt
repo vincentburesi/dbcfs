@@ -28,6 +28,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     }
     "info" -> Command("**info**\n*Display current profile summary*", CommandRunner::runInfoCommand)
     "list" -> when (it.nextOrNull()) {
+        "allowed" -> Command("**list profiles**\n*List allowed users, roles and channels*", CommandRunner::runListAllowedCommand, 2)
         "profiles" -> Command("**list profiles**\n*List available profiles*", CommandRunner::runListProfilesCommand, 2)
         "mods" -> Command("**list mods**\n*List all mods from active profile*", CommandRunner::runListModsCommand, 2)
         "files" -> Command("**list files**\n*List all files associated to active profile*", CommandRunner::runListFilesCommand, 2)
@@ -50,7 +51,7 @@ fun getCommand(it: Iterator<String>) = when (it.nextOrNull()) {
     "build" -> Command("**build**\n*Builds current profile: download game and mod files then generate the map*", CommandRunner::runBuildCommand)
     "update" -> when (it.nextOrNull()) {
         "profile" -> Command("**update profile** [__version__]\n*Update the active profile*", CommandRunner::runUpdateProfileCommand, 2)
-        "mod" -> Command("**update mod** [__version__]\n*Update the given mod associated with the active profile*", CommandRunner::runUpdateModCommand, 2)
+        "mod" -> Command("**update mod** __mod__ [__version__]\n*Update the given mod associated with the active profile*", CommandRunner::runUpdateModCommand, 2)
         "all" -> Command("**update all**\n*Updates every component associated to the active profile to the latest version*", CommandRunner::runUpdateAllCommand, 2)
         else -> null
     }
@@ -77,7 +78,7 @@ const val listOfAvailableCommands = """
 :small_blue_diamond: **swap** *Select active profile*
 :small_blue_diamond: **allow|disallow** *Manage who can use this bot*
 :small_blue_diamond: **sync game|mod|mods|all** *Starts sync with Factorio servers (can take some time)*
-:small_blue_diamond: **list profiles|mods|files|releases game|releases mod** *Lists various elements*
+:small_blue_diamond: **list allowed|profiles|mods|files|releases game|releases mod** *Lists various elements*
 :small_blue_diamond: **create|copy|remove profile** *Manage profiles*
 :small_blue_diamond: **edit** *Open profile HTML configuration*
 :small_blue_diamond: *You can also directly upload configuration files to Discord*

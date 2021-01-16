@@ -9,6 +9,7 @@ import fr.ct402.dbcfs.refactor.manager.ProcessManager
 import fr.ct402.dbcfs.refactor.manager.ProfileManager
 import fr.ct402.dbcfs.persist.model.GameVersion
 import fr.ct402.dbcfs.listPoint
+import fr.ct402.dbcfs.persist.model.AllowedId
 import fr.ct402.dbcfs.utilities.StellarisManager
 import kotlinx.coroutines.delay
 import net.dv8tion.jda.api.entities.ChannelType
@@ -39,6 +40,15 @@ class CommandRunner(
                 (if (nbSaves != 0) "\n*$nbSaves save${ if (nbSaves == 1) " is" else "s are" } currently present*" else "")
 
         notifier.success(msg).queue()
+    }
+
+    fun runListAllowedCommand(notifier: Notifier, args: List<String>) {
+        val allowedIds = AllowedId.IdType.values().joinToString(prefix = "**Allowed**\n", separator = "\n") { type ->
+            val name = type.name.toLowerCase().capitalize()
+            discordAuthManager.getAllowedIdList(type).joinToString(prefix = "$name: ") { it.discordId }
+        }
+
+        notifier.success("$allowedIds").queue()
     }
 
     fun runListProfilesCommand(notifier: Notifier, args: List<String>) {
