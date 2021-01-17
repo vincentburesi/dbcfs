@@ -17,18 +17,20 @@ import java.util.concurrent.TimeUnit
 import kotlin.IllegalStateException
 
 @Component
-class ProcessManager (
+class ProcessManager(
         dbLoader: DbLoader
-): AbstractComponent() {
+) : AbstractComponent() {
     private val mutex = Mutex()
     private var currentProcess: Process? = null
     final var currentProcessProfileName: String? = null; private set
 
     suspend fun start(profile: Profile, notifier: Notifier, save: String? = null) {
         notifier.running("Starting server...").queue()
-        val factorioPath = profile.gameVersion.localPath ?: throw IllegalStateException("Cannot start server, game has not been downloaded")
+        val factorioPath = profile.gameVersion.localPath
+                ?: throw IllegalStateException("Cannot start server, game has not been downloaded")
         val saveName = save ?: "map.zip"
-        val cmd = arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
+        val cmd = arrayOf(
+                "$factorioPath/$factorioExecutableRelativeLocation",
                 "--start-server", "${profile.localPath}/$saveName",
                 "--server-settings", profile.findConfig("server-settings"),
                 "--console-log", "${profile.localPath}/server-logs",
@@ -38,18 +40,20 @@ class ProcessManager (
         mutex.withLock {
             if (currentProcess?.isAlive == true) throw IllegalStateException("Server already started")
 
-            val p = Runtime.getRuntime().exec(cmd)
-            val success = !p.waitFor(3L, TimeUnit.SECONDS)
+            val process = Runtime.getRuntime().exec(cmd)
+            val success = !process.waitFor(3L, TimeUnit.SECONDS)
+            val stdOutput = process.inputStream.bufferedReader().use { it.readText() }
+            val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
+            logger.warn(stdOutput)
+            logger.error(errorOutput)
 
             if (success) {
-                currentProcess = p
+                currentProcess = process
                 currentProcessProfileName = profile.name
                 notifier.success("Server successfully started").queue()
             } else {
-                val output = p.inputStream.bufferedReader().use { it.readText() }
-                notifier.error("Failed to start server, see logs for details\n```\n...${output.takeLast(1500)}\n```\n")
-                logger.warn(output)
-                logger.error(p.errorStream.bufferedReader().use { it.readText() })
+                notifier.error("Failed to start server, see logs for details\n```\n...${stdOutput.takeLast(1500)}\n```\n" +
+                        "```\n...${errorOutput.takeLast(1500)}\n```\n")
             }
         }
     }
@@ -68,7 +72,8 @@ class ProcessManager (
         } else
             notifier.running("Building map...").queue()
 
-        val p = Runtime.getRuntime().exec(arrayOf("$factorioPath/$factorioExecutableRelativeLocation",
+        val process = Runtime.getRuntime().exec(arrayOf(
+                "$factorioPath/$factorioExecutableRelativeLocation",
                 "--create", mapPath,
                 "--map-gen-settings", profile.findConfig("map-gen-settings"),
                 "--map-settings", profile.findConfig("map-settings"),
@@ -76,14 +81,18 @@ class ProcessManager (
                 "--mod-directory", "${profile.localPath}/$profileRelativeModDirectory",
         ))
 
-        return if (p.waitFor() == 0) {
+        val result = process.waitFor()
+        val stdOutput = process.inputStream.bufferedReader().use { it.readText() }
+        val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
+        logger.info(stdOutput)
+        logger.error(errorOutput)
+
+        return if (result == 0) {
             notifier.success("Map is ready, you can start the server").queue()
             true
         } else {
-            val output = p.inputStream.bufferedReader().use { it.readText() }
-            notifier.error("Failed to build map, see logs for details\n```\n...${output.takeLast(1500)}\n```\n");
-            logger.warn(output)
-            logger.error(p.errorStream.bufferedReader().use { it.readText() })
+            notifier.error("Failed to build map, see logs for details\n```\n...${stdOutput.takeLast(1500)}\n```\n\n" +
+                    "```\n...${errorOutput.takeLast(1500)}\n```\n");
             false
         }
     }
@@ -102,7 +111,6 @@ class ProcessManager (
         return if (currentProcess?.isAlive == true) {
             currentProcess?.destroy()
             true
-        }
-        else false
+        } else false
     }
 }
