@@ -9,6 +9,7 @@ import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.refactor.commons.Config
 import fr.ct402.dbcfs.refactor.commons.*
 import fr.ct402.dbcfs.Notifier
+import fr.ct402.dbcfs.commons.compareVersionStrings
 import fr.ct402.dbcfs.error
 import fr.ct402.dbcfs.persist.model.GameVersion
 import fr.ct402.dbcfs.persist.model.GameVersion.Platform

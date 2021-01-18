@@ -7,10 +7,14 @@ import fr.ct402.dbcfs.persist.DbLoader
 import fr.ct402.dbcfs.persist.model.*
 import fr.ct402.dbcfs.refactor.commons.Config
 import fr.ct402.dbcfs.Notifier
+import fr.ct402.dbcfs.commons.compareVersionStrings
+import fr.ct402.dbcfs.commons.isLesserOrEqualVersionString
 import fr.ct402.dbcfs.error
 import fr.ct402.dbcfs.running
 import fr.ct402.dbcfs.success
 import khttp.get
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toInstant
 import me.liuwj.ktorm.dsl.*
 import me.liuwj.ktorm.entity.*
 import org.springframework.context.annotation.Configuration
@@ -35,8 +39,13 @@ class ModManager(
     fun getModByNameOrThrow(modName: String) = getModByName(modName) ?: throw ModNotFoundException(modName)
     fun getModReleaseByVersion(mod: Mod, version: String) = modReleaseSequence().find { (it.mod eq mod.id) and (it.version eq version) }
     fun getModReleaseByVersionOrThrow(mod: Mod, version: String) = getModReleaseByVersion(mod, version) ?: throw ModReleaseNotFoundException(mod.name, version)
-    fun getLatestModRelease(mod: Mod) = modReleaseSequence().find { it.downloadUrl eq mod.latestReleaseDownloadUrl }
-    fun getLatestModReleaseOrThrow(mod: Mod) = getLatestModRelease(mod) ?: throw ModReleaseNotFoundException(mod.name)
+
+    fun getLatestCompatibleModRelease(mod: Mod, gameVersion: GameVersion) = modReleaseSequence()
+            .filter { it.mod eq mod.id }.toList()
+            .sortedByDescending { it.releasedAt.toInstant() }
+            .firstOrNull { it.factorioVersion.isLesserOrEqualVersionString(gameVersion.versionNumber) }
+    fun getLatestCompatibleModReleaseOrThrow(mod: Mod, gameVersion: GameVersion) = getLatestCompatibleModRelease(mod, gameVersion)
+            ?: throw CompatibleModReleaseNotFoundException(mod.name, gameVersion.versionNumber)
 
     fun addMod(notifier: Notifier, modRelease: ModRelease) {
         val profile = profileManager.currentProfileOrThrow
@@ -69,10 +78,11 @@ class ModManager(
 
     fun addMod(notifier: Notifier, modName: String) {
         val mod = getModByNameOrThrow(modName)
-        val modRelease = getLatestModRelease(mod).run {
+        val gameVersion = profileManager.currentProfile?.gameVersion ?: throw NoCurrentProfileException()
+        val modRelease = getLatestCompatibleModRelease(mod, gameVersion).run {
             if (this == null) {
                 modPortalApiService.syncModReleaseList(mod, notifier)
-                getLatestModReleaseOrThrow(mod)
+                getLatestCompatibleModReleaseOrThrow(mod, gameVersion)
             } else this
         }
         notifier.running("Found **${mod.name}** version **${modRelease.version}**...").queue()

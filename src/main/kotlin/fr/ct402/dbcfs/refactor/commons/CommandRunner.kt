@@ -218,7 +218,9 @@ class CommandRunner(
 
         notifier.launchAsCoroutine {
             notifier.running("Starting build...").queue()
-            profileManager.downloadGame(notifier) && modManager.downloadMods(profile, notifier) && processManager.genMap(profile, notifier)
+            profileManager.downloadGame(notifier)
+                    && modManager.downloadMods(profile, notifier)
+                    && processManager.genMap(profile, notifier)
         }
     }
 

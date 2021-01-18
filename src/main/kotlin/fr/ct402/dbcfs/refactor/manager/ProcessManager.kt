@@ -18,7 +18,7 @@ import kotlin.IllegalStateException
 
 @Component
 class ProcessManager(
-        dbLoader: DbLoader
+        dbLoader: DbLoader // FIXME remove this if still unused after rework
 ) : AbstractComponent() {
     private val mutex = Mutex()
     private var currentProcess: Process? = null

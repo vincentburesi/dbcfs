@@ -14,6 +14,7 @@ java.sourceCompatibility = JavaVersion.VERSION_11
 repositories {
 	mavenCentral()
 	jcenter()
+	maven(url = "https://kotlin.bintray.com/kotlinx/")
 }
 
 dependencies {
@@ -21,6 +22,7 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9")
+	implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.1.1")
 
 	implementation("org.springframework.boot:spring-boot-starter-web")
 //	implementation("org.springframework.boot:spring-boot-starter-mustache")

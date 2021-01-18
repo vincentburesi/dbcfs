@@ -11,17 +11,6 @@ import kotlin.math.min
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
 
-fun compareVersionStrings(s1: String, s2: String): Int {
-    val n1 = s1.split('.').map { it.toInt() }
-    val n2 = s2.split('.').map { it.toInt() }
-
-    for (i in 0 until min(n1.size, n2.size))
-        if (n1[i] - n2[i] != 0)
-            return n1[i] - n2[i]
-
-    return 0;
-}
-
 enum class SizeUnit (val unit: String, val multiplier: Long) {
     BYTE("B", 1),
     KILO("kB", 1024),
@@ -89,3 +78,4 @@ class FactorioApiErrorException(msg: String): RuntimeException("An error occured
 class ModNotFoundException(name: String): RuntimeException("No mod found matching this name: $name. Try to sync the server or check factorio mod portal")
 class GameReleaseNotFoundException(): RuntimeException("No matching game release was found")
 class ModReleaseNotFoundException(modName: String, version: String? = null): RuntimeException("No mod release found matching $modName${ if (version != null) " version $version" else "" }")
+class CompatibleModReleaseNotFoundException(modName: String, gameVersion: String): RuntimeException("No $modName release found for game version $gameVersion")

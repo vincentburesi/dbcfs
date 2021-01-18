@@ -12,6 +12,7 @@ interface ModRelease: Entity<ModRelease> {
     var downloadUrl: String
     var fileName: String
     var infoJson: String // TODO Dependency list
+    var factorioVersion: String
     var releasedAt: String
     var version: String
     var sha1: String
@@ -23,6 +24,7 @@ object ModReleases : Table<ModRelease>("t_mod_release") {
     val downloadUrl = varchar("download_url").bindTo { it.downloadUrl }
     val fileName = varchar("file_name").bindTo { it.fileName }
     val infoJson = varchar("info_json").bindTo { it.infoJson }
+    val factorioVersion = varchar("factorio_version").bindTo { it.factorioVersion }
     val releasedAt = varchar("released_at").bindTo { it.releasedAt }
     val version = varchar("version").bindTo { it.version }
     val sha1 = varchar("sha1").bindTo { it.sha1 }
@@ -34,6 +36,7 @@ val modReleaseSchema = """
         download_url TEXT NOT NULL UNIQUE,
         file_name TEXT NOT NULL UNIQUE,
         info_json TEXT NOT NULL,
+        factorio_version TEXT NOT NULL,
         released_at TEXT NOT NULL,
         version TEXT NOT NULL,
         sha1 TEXT NOT NULL,

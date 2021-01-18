@@ -16,6 +16,7 @@ import fr.ct402.dbcfs.success
 import khttp.get
 import me.liuwj.ktorm.dsl.eq
 import me.liuwj.ktorm.entity.*
+import org.json.JSONObject
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Service
 import kotlin.math.abs
@@ -147,6 +148,7 @@ class ModPortalApiService(
                 downloadUrl = release.download_url
                 fileName = release.file_name
                 infoJson = release.info_json.toString()
+                factorioVersion = release.info_json.factorio_version
                 releasedAt = release.released_at
                 version = release.version
                 sha1 = release.sha1
